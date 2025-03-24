@@ -113,7 +113,10 @@ void race_update(void) {
 	ships_draw();
 	droid_draw(&g.droid);
 	weapons_draw();
+	// a temp fix because i broke the vertex order on particles
+	render_set_cull_backface(false);
 	particles_draw();
+	render_set_cull_backface(true);
 
 	// Draw 2d
 	render_set_view_2d();

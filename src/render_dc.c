@@ -5,6 +5,8 @@
 
 #include <kos.h>
 
+void mat4_mul_fipr(mat4_t *res, mat4_t *a, mat4_t *b);
+
 const float R_ViewportMatrix[4][4] = {
         {320.0f,    0.0f, 0.0f, 0.0f},
         {0.0f,   -240.0f, 0.0f, 0.0f},
@@ -193,6 +195,8 @@ void render_cleanup(void) {
 	// TODO
 }
 
+mat4_t vp_mat;
+
 void render_set_screen_size(vec2i_t size) {
 	screen_size = size;
 
@@ -205,6 +209,7 @@ void render_set_screen_size(vec2i_t size) {
 		0, f, 0, 0,
 		0, 0, (FAR_PLANE + NEAR_PLANE) * nf, -1,
 		0, 0, 2 * FAR_PLANE * NEAR_PLANE * nf, 0);
+	mat4_mul_fipr(&vp_mat, &viewport, &projection_mat);
 }
 
 void render_set_resolution(render_resolution_t res) {
@@ -280,15 +285,17 @@ void render_set_view_2d(void) {
 		0, -2 * bt, 0, 0,
 		0, 0, 2 * nf, 0,
 		(left + right) * lr, (top + bottom) * bt, (far + near) * nf, 1);
-	mat4_mul(&vm2_mat, &viewport, &mvp_mat);
+	mat4_mul_fipr(&vm2_mat, &viewport, &mvp_mat);
 	mat_load(&vm2_mat.cols);
 }
 
+
 void render_set_model_mat(mat4_t *m) {
-	mat4_mul(&vm_mat, &view_mat, m);
-	mat4_mul(&vm2_mat, &projection_mat, &vm_mat);
-	mat4_mul(&mvp_mat, &viewport, &vm2_mat);
-	mat_load(&mvp_mat.cols);
+	mat4_mul_fipr(&vm_mat, &view_mat, m);
+	//mat4_mul(&vm2_mat, &projection_mat, &vm_mat);
+	//mat4_mul(&mvp_mat, &viewport, &vm2_mat);
+	//mat_load(&mvp_mat.cols);
+	mat4_mul(&mvp_mat, &vp_mat, &vm_mat);
 }
 
 void render_set_depth_write(bool enabled) {

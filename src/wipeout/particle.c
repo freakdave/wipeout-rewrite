@@ -32,7 +32,7 @@ void particles_update(void) {
 		}
 	}
 }
-
+//extern int cull_en;
 void particles_draw(void) {
 	if (particles_active == 0) {
 		return;
@@ -40,6 +40,8 @@ void particles_draw(void) {
 
 	render_set_model_mat(&mat4_identity());
 	render_set_depth_write(false);
+//	int old_cull_en = cull_en;
+//	render_set_cull_backface(false);
 	render_set_blend_mode(RENDER_BLEND_LIGHTER);
 	render_set_depth_offset(-32.0);
 
@@ -51,6 +53,7 @@ void particles_draw(void) {
 	render_set_depth_offset(0.0);
 	render_set_depth_write(true);
 	render_set_blend_mode(RENDER_BLEND_NORMAL);
+//	render_set_cull_backface(old_cull_en);
 }
 
 void particles_spawn(vec3_t position, uint16_t type, vec3_t velocity, int size) {

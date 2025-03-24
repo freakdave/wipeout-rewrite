@@ -233,11 +233,14 @@ static inline vec3_t vec3_normalize(vec3_t a) {
 		a.z / length
 	);
 #endif
-//	float x = a.x;
-//	float y = a.y;
-//	float z = a.z;
-	vec3f_normalize(a.x,a.y,a.z);
-	return a;//vec3(x,y,z);	
+
+	// i dont know for sure that it is ok to update in place
+	float x = a.x;
+	float y = a.y;
+	float z = a.z;
+	vec3f_normalize(x,y,z);//a.x,a.y,a.z);
+	return //a;//
+	vec3(x,y,z);	
 }
 
 static inline float wrap_angle(float a) {

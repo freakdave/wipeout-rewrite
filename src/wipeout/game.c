@@ -189,6 +189,11 @@ const game_def_t def = {
 		{.path = "wipeout/music/track11.adpcm", .name = "WIPEOUT"},
 	},
 	.credits = {
+		"#DREAMCAST VERSION",
+			"JNMARTIN84",
+			"MRNEO240",
+			"",
+			"",
 		"#MANAGING DIRECTORS",
 			"IAN HETHERINGTON",
 			"JONATHAN ELLIS",
