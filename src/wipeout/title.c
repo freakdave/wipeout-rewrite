@@ -20,7 +20,7 @@ void title_init(void) {
 void title_update(void) {
 	render_set_view_2d();
 	render_push_2d(vec2i(0, 0), render_size(), rgba(128, 128, 128, 255), title_image);
-	ui_draw_text_centered("PRESS ENTER", ui_scaled_pos(UI_POS_BOTTOM | UI_POS_CENTER, vec2i(0, -40)), UI_SIZE_8, UI_COLOR_DEFAULT);
+	ui_draw_text_centered("PRESS START", ui_scaled_pos(UI_POS_BOTTOM | UI_POS_CENTER, vec2i(0, -40)), UI_SIZE_8, UI_COLOR_DEFAULT);
 
 
 	if (input_pressed(A_MENU_SELECT) || input_pressed(A_MENU_START)) {

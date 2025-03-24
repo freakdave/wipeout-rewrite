@@ -89,9 +89,9 @@ static void page_main_init(menu_t *menu) {
 	menu_page_add_button(page, 0, "START GAME", button_start_game);
 	menu_page_add_button(page, 1, "OPTIONS", button_options);
 
-	#ifndef __EMSCRIPTEN__
-		menu_page_add_button(page, 2, "QUIT", button_quit);
-	#endif
+//	#ifndef __EMSCRIPTEN__
+//		menu_page_add_button(page, 2, "QUIT", button_quit);
+//	#endif
 }
 
 

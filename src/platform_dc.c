@@ -16,6 +16,7 @@ char *path_assets = "";
 char *path_userdata = "";
 char *temp_path = NULL;
 
+void vmu_icon(void);
 
 void platform_exit(void) {
 	wants_to_exit = true;
@@ -244,6 +245,38 @@ int vmu_check(void)
 static vmu_pkg_t pkg;
 
 #define USERDATA_BLOCK_COUNT 6
+#include "owl.h"
+
+unsigned char tmp[6 * 32];
+
+void fix_xbm(unsigned char *p)
+{
+	for (int i = 31; i > -1; i--) {
+		memcpy(&tmp[(31 - i) * 6], &p[i * 6], 6);
+	}
+
+	memcpy(p, tmp, 6 * 32);
+
+	for (int j = 0; j < 32; j++) {
+		for (int i = 0; i < 6; i++) {
+			uint8_t tmpb = p[(j * 6) + (5 - i)];
+			tmp[(j * 6) + i] = tmpb;
+		}
+	}
+
+	memcpy(p, tmp, 6 * 32);
+}
+
+void vmu_icon(void) {
+	maple_device_t *vmudev = NULL;
+
+	fix_xbm(owl2_bits);
+
+	if ((vmudev = maple_enum_type(0, MAPLE_FUNC_LCD)))
+		vmu_draw_lcd(vmudev, owl2_bits);
+//		vmufb_present(&vmubuf, vmudev);
+//	vmu_set_icon(owl_data);	
+}
 
 uint8_t *platform_load_userdata(const char *name, uint32_t *bytes_read) {
 	vmu_check();
@@ -446,6 +479,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	wav_init();
+	vmu_icon();
 
 	// Reserve some space for concatenating the asset and userdata paths with
 	// local filenames.
