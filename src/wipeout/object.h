@@ -345,7 +345,7 @@ typedef struct Object {
 	int16_t flags; // Next object in list
 	float radius;
 	struct Object *next; // Next object in list
-} Object;
+}  Object;
 
 typedef union Prm {
 	uint8_t *ptr;

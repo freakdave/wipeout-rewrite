@@ -37,11 +37,11 @@ static struct {
 } models;
 
 static void draw_model(Object *model, vec2_t offset, vec3_t pos, float rotation) {
-	render_set_view(vec3(0,0,0), vec3(0, -M_PI, -M_PI));
+	render_set_view(vec3(0,0,0), vec3(0, -F_PI, -F_PI));
 	render_set_screen_position(offset);
 	mat4_t mat = mat4_identity();
 	mat4_set_translation(&mat, pos);
-	mat4_set_yaw_pitch_roll(&mat, vec3(0, rotation, M_PI));
+	mat4_set_yaw_pitch_roll(&mat, vec3(0, rotation, F_PI));
 	object_draw(model, &mat);
 	render_set_screen_position(vec2(0, 0));
 }
@@ -321,10 +321,11 @@ static void page_options_video_init(menu_t *menu) {
 
 // -----------------------------------------------------------------------------
 // Options Audio
-
+extern void wav_volume(int volume);
 static void toggle_music_volume(menu_t *menu, int data) {
 	save.music_volume = (float)data * 0.1;
 	save.is_dirty = true;
+	wav_volume(255 * save.music_volume);
 }
 
 static void toggle_sfx_volume(menu_t *menu, int data) {
@@ -627,7 +628,7 @@ static void objects_unpack_imp(Object **dest_array, int len, Object *src) {
 	error_if(i != len, "expected %d models got %d", len, i)
 }
 
-
+extern int LOAD_UNFILTERED;
 void main_menu_init(void) {
 	g.is_attract_mode = false;
 
@@ -638,14 +639,19 @@ void main_menu_init(void) {
 	background = image_get_texture("wipeout/textures/wipeout1.tim");
 	track_images = image_get_compressed_textures("wipeout/textures/track.cmp");
 
+LOAD_UNFILTERED = 1;
 	objects_unpack(models.race_classes, objects_load("wipeout/common/leeg.prm", image_get_compressed_textures("wipeout/common/leeg.cmp")));
 	objects_unpack(models.teams, objects_load("wipeout/common/teams.prm", texture_list_empty()));
+LOAD_UNFILTERED = 0;
 	objects_unpack(models.pilots, objects_load("wipeout/common/pilot.prm", image_get_compressed_textures("wipeout/common/pilot.cmp")));
+LOAD_UNFILTERED = 1;
 	objects_unpack(models.options, objects_load("wipeout/common/alopt.prm", image_get_compressed_textures("wipeout/common/alopt.cmp")));
+LOAD_UNFILTERED = 0;
 	objects_unpack(models.rescue, objects_load("wipeout/common/rescu.prm", image_get_compressed_textures("wipeout/common/rescu.cmp")));
+LOAD_UNFILTERED = 1;
 	objects_unpack(models.controller, objects_load("wipeout/common/pad1.prm", image_get_compressed_textures("wipeout/common/pad1.cmp")));
 	objects_unpack(models.misc, objects_load("wipeout/common/msdos.prm", image_get_compressed_textures("wipeout/common/msdos.cmp")));
-
+LOAD_UNFILTERED = 0;
 	menu_reset(main_menu);
 	page_main_init(main_menu);
 }
@@ -653,7 +659,6 @@ void main_menu_init(void) {
 void main_menu_update(void) {
 	render_set_view_2d();
 	render_push_2d(vec2i(0, 0), render_size(), rgba(128, 128, 128, 255), background);
-
 	menu_update(main_menu);
 }
 

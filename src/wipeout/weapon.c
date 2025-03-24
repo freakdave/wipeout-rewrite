@@ -175,7 +175,8 @@ void weapons_update(void) {
 
 			// Move along track normal
 			track_face_t *face = track_section_get_base_face(weapon->section);
-			vec3_t face_point = face->tris[0].vertices[0].pos;
+			//vec3_t face_point = face->tris[0].vertices[0].pos;
+			vec3_t face_point = vec3(face->tris[0].vertices[0].x, face->tris[0].vertices[0].y, face->tris[0].vertices[0].z);
 			vec3_t face_normal = face->normal;
 			float height = vec3_distance_to_plane(weapon->position, face_point, face_normal);
 
@@ -235,7 +236,8 @@ void weapon_set_trajectory(weapon_t *self) {
 	ship_t *ship = self->owner;
 	track_face_t *face = track_section_get_base_face(ship->section);
 
-	vec3_t face_point = face->tris[0].vertices[0].pos;
+	//vec3_t face_point = face->tris[0].vertices[0].pos;
+	vec3_t face_point = vec3(face->tris[0].vertices[0].x, face->tris[0].vertices[0].y, face->tris[0].vertices[0].z);
 	vec3_t target = vec3_add(ship->position, vec3_mulf(ship->dir_forward, 64));
 	float target_height = vec3_distance_to_plane(target, face_point, face->normal);
 	float ship_height = vec3_distance_to_plane(target, face_point, face->normal);
@@ -251,18 +253,18 @@ void weapon_follow_target(weapon_t *self) {
 	vec3_t angular_velocity = vec3(0, 0, 0);
 	if (self->target) {
 		vec3_t dir = vec3_mulf(vec3_sub(self->target->position, self->position), 0.125 * 30 * system_tick());
-		float height = sqrt(dir.x * dir.x + dir.z * dir.z);
-		angular_velocity.y = -atan2(dir.x, dir.z) - self->angle.y;
-		angular_velocity.x = -atan2(dir.y, height) - self->angle.x;
+		float height = sqrtf(dir.x * dir.x + dir.z * dir.z);
+		angular_velocity.y = -bump_atan2f(dir.x, dir.z) - self->angle.y;
+		angular_velocity.x = -bump_atan2f(dir.y, height) - self->angle.x;
 	}
 
 	angular_velocity = vec3_wrap_angle(angular_velocity);
 	self->angle = vec3_add(self->angle, vec3_mulf(angular_velocity, 30 * system_tick() * 0.25));
 	self->angle = vec3_wrap_angle(self->angle);
 
-	self->acceleration.x = -sin(self->angle.y) * cos(self->angle.x) * 256;
-	self->acceleration.y = -sin(self->angle.x) * 256;
-	self->acceleration.z = cos(self->angle.y) * cos(self->angle.x) * 256;
+	self->acceleration.x = -sinf(self->angle.y) * cosf(self->angle.x) * 256;
+	self->acceleration.y = -sinf(self->angle.x) * 256;
+	self->acceleration.z = cosf(self->angle.y) * cosf(self->angle.x) * 256;
 }
 
 ship_t *weapon_collides_with_ship(weapon_t *self) {
@@ -294,7 +296,8 @@ bool weapon_collides_with_track(weapon_t *self) {
 
 	track_face_t *face = g.track.faces + self->section->face_start;
 	for (int i = 0; i < self->section->face_count; i++) {
-		vec3_t face_point = face->tris[0].vertices[0].pos;
+		//vec3_t face_point = face->tris[0].vertices[0].pos;
+		vec3_t face_point = vec3(face->tris[0].vertices[0].x, face->tris[0].vertices[0].y, face->tris[0].vertices[0].z);
 		float distance = vec3_distance_to_plane(self->position, face_point, face->normal);
 		if (distance < 0) {
 			return true;
@@ -334,7 +337,7 @@ void weapon_update_mine_wait_for_release(weapon_t *self) {
 		self->update_func = weapon_update_mine;
 		self->model = weapon_assets.mine;
 		self->position = self->owner->position;
-		self->angle.y = rand_float(0, M_PI * 2);
+		self->angle.y = rand_float(0, twopi_i754);
 
 		self->trail_particle = PARTICLE_TYPE_NONE;
 		self->track_hit_particle = PARTICLE_TYPE_NONE;
@@ -349,7 +352,7 @@ void weapon_update_mine_wait_for_release(weapon_t *self) {
 void weapon_update_mine_lights(weapon_t *self, int index) {
 	Prm prm = {.primitive = self->model->primitives};
 
-	uint8_t r = sin(system_cycle_time() * M_PI * 2 + index * 0.66) * 128 + 128;
+	uint8_t r = sinf(system_cycle_time() * twopi_i754 + index * 0.66) * 128 + 128;
 	for (int i = 0; i < 8; i++) {
 		switch (prm.primitive->type) {
 		case PRM_TYPE_GT3:
@@ -438,8 +441,8 @@ void weapon_update_missile(weapon_t *self) {
 			}
 			else {
 				ship->speed = ship->speed * 0.03125;
-				ship->angular_velocity.z += 10 * M_PI;
-				ship->turn_rate_from_hit = rand_float(-M_PI, M_PI);
+				ship->angular_velocity.z += 10 * F_PI;
+				ship->turn_rate_from_hit = rand_float(-F_PI, F_PI);
 			}
 		}
 	}
@@ -486,8 +489,8 @@ void weapon_update_rocket(weapon_t *self) {
 			}
 			else {
 				ship->speed = ship->speed * 0.03125;
-				ship->angular_velocity.z += 10 * M_PI;
-				ship->turn_rate_from_hit = rand_float(-M_PI, M_PI);
+				ship->angular_velocity.z += 10 * F_PI;
+				ship->turn_rate_from_hit = rand_float(-F_PI, F_PI);
 			}
 		}
 	}
@@ -556,7 +559,6 @@ void weapon_update_shield(weapon_t *self) {
 		return;
 	}
 
-
 	if (flags_is(self->owner->flags, SHIP_VIEW_INTERNAL)) {
 		self->position = ship_cockpit(self->owner);
 		self->model = weapon_assets.shield_internal;
@@ -581,9 +583,9 @@ void weapon_update_shield(weapon_t *self) {
 		case PRM_TYPE_G3 :
 			coords = poly.g3->coords;
 
-			col0 = sin(color_timer * coords[0]) * 127 + 128;
-			col1 = sin(color_timer * coords[1]) * 127 + 128;
-			col2 = sin(color_timer * coords[2]) * 127 + 128;
+			col0 = sinf(color_timer * coords[0]) * 127 + 128;
+			col1 = sinf(color_timer * coords[1]) * 127 + 128;
+			col2 = sinf(color_timer * coords[2]) * 127 + 128;
 
 			poly.g3->color[0].r = col0;
 			poly.g3->color[0].g = col0;
@@ -605,10 +607,10 @@ void weapon_update_shield(weapon_t *self) {
 		case PRM_TYPE_G4 :
 			coords = poly.g4->coords;
 
-			col0 = sin(color_timer * coords[0]) * 127 + 128;
-			col1 = sin(color_timer * coords[1]) * 127 + 128;
-			col2 = sin(color_timer * coords[2]) * 127 + 128;
-			col3 = sin(color_timer * coords[3]) * 127 + 128;
+			col0 = sinf(color_timer * coords[0]) * 127 + 128;
+			col1 = sinf(color_timer * coords[1]) * 127 + 128;
+			col2 = sinf(color_timer * coords[2]) * 127 + 128;
+			col3 = sinf(color_timer * coords[3]) * 127 + 128;
 
 			poly.g4->color[0].r = col0;
 			poly.g4->color[0].g = col0;

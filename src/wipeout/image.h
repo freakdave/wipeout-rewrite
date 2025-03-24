@@ -13,7 +13,7 @@ typedef struct {
 typedef struct {
 	uint32_t width;
 	uint32_t height;
-	rgba_t *pixels;
+	uint16_t *pixels;
 } image_t;
 
 typedef struct {

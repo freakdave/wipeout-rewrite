@@ -45,12 +45,12 @@ void droid_init(droid_t *droid, ship_t *ship) {
 }
 
 void droid_draw(droid_t *droid) {
-	droid->cycle_timer += system_tick() * M_PI * 2;
+	droid->cycle_timer += system_tick() * twopi_i754;
 
 	Prm prm = {.primitive = droid_model->primitives};
-	int rf = sin(droid->cycle_timer) * 127 + 128;
-	int gf = sin(droid->cycle_timer + 0.2) * 127 + 128;
-	int bf = sin(droid->cycle_timer * 0.5 + 0.1) * 127 + 128;
+	int rf = sinf(droid->cycle_timer) * 127 + 128;
+	int gf = sinf(droid->cycle_timer + 0.2) * 127 + 128;
+	int bf = sinf(droid->cycle_timer * 0.5 + 0.1) * 127 + 128;
 
 	int r, g, b;
 
@@ -131,22 +131,22 @@ void droid_update_intro(droid_t *droid, ship_t *ship) {
 	droid->update_timer -= system_tick();
 
 	if (droid->update_timer < DROID_UPDATE_TIME_INTRO_3) {
-		droid->acceleration.x = (-sin(droid->angle.y) * cos(droid->angle.x)) * 0.25 * 4096.0;
+		droid->acceleration.x = (-sinf(droid->angle.y) * cosf(droid->angle.x)) * 0.25 * 4096.0;
 		droid->acceleration.y = 0;
-		droid->acceleration.z = (cos(droid->angle.y) * cos(droid->angle.x)) * 0.25 * 4096.0;
+		droid->acceleration.z = (cosf(droid->angle.y) * cosf(droid->angle.x)) * 0.25 * 4096.0;
 		droid->angular_velocity.y = 0;
 	}
 
 	else if (droid->update_timer < DROID_UPDATE_TIME_INTRO_2) {
-		droid->acceleration.x = (-sin(droid->angle.y) * cos(droid->angle.x)) * 0.125 * 4096.0;
+		droid->acceleration.x = (-sinf(droid->angle.y) * cosf(droid->angle.x)) * 0.125 * 4096.0;
 		droid->acceleration.y = -140;
-		droid->acceleration.z = (cos(droid->angle.y) * cos(droid->angle.x)) * 0.125 * 4096.0;
-		droid->angular_velocity.y = (-8.0 / 4096.0) * M_PI * 2 * 30;
+		droid->acceleration.z = (cosf(droid->angle.y) * cosf(droid->angle.x)) * 0.125 * 4096.0;
+		droid->angular_velocity.y = (-8.0 / 4096.0) * twopi_i754 * 30;
 	}
 
 	else if (droid->update_timer < DROID_UPDATE_TIME_INTRO_1) {
 		droid->acceleration.y -= 90 * system_tick();
-		droid->angular_velocity.y = (8.0 / 4096.0) * M_PI * 2 * 30;
+		droid->angular_velocity.y = (8.0 / 4096.0) * twopi_i754 * 30;
 	}
 
 	if (droid->update_timer <= 0) {
@@ -169,14 +169,14 @@ void droid_update_idle(droid_t *droid, ship_t *ship) {
 
 	vec3_t target_vector = vec3_sub(target, droid->position);
 
-	float target_heading = -atan2(target_vector.x, target_vector.z);
+	float target_heading = -bump_atan2f(target_vector.x, target_vector.z);
 	float quickest_turn = target_heading - droid->angle.y;
 	float turn;
 	if (droid->angle.y < 0) {
-		turn = target_heading - (droid->angle.y + M_PI*2);
+		turn = target_heading - (droid->angle.y + twopi_i754);
 	}
 	else {
-		turn = target_heading - (droid->angle.y - M_PI*2);
+		turn = target_heading - (droid->angle.y - twopi_i754);
 	}
 
 	if (fabsf(turn) < fabsf(quickest_turn)) {
@@ -186,9 +186,9 @@ void droid_update_idle(droid_t *droid, ship_t *ship) {
 		droid->angular_velocity.y = quickest_turn * 30.0 / 64.0;
 	}
 
-	droid->acceleration.x = (-sin(droid->angle.y) * cos(droid->angle.x)) * 0.125 * 4096;
+	droid->acceleration.x = (-sinf(droid->angle.y) * cosf(droid->angle.x)) * 0.125 * 4096;
 	droid->acceleration.y = target_vector.y / 64.0;
-	droid->acceleration.z = (cos(droid->angle.y) * cos(droid->angle.x)) * 0.125 * 4096;
+	droid->acceleration.z = (cosf(droid->angle.y) * cosf(droid->angle.x)) * 0.125 * 4096;
 
 	if (flags_is(ship->flags, SHIP_IN_RESCUE)) {
 		flags_add(droid->sfx_tractor->flags, SFX_PLAY);

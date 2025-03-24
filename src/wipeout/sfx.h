@@ -44,7 +44,11 @@ typedef enum {
 	SFX_LOOP_PAUSE = (1<<3),
 } sfx_flags_t;
 
+#include <dc/sound/sfxmgr.h>
+
 typedef struct {
+	int chn;
+	sfx_play_data_t data;
 	sfx_source_t source;
 	sfx_flags_t flags;
 	float pan;
@@ -55,7 +59,7 @@ typedef struct {
 	float position;
 } sfx_t;
 
-#define SFX_MAX 64
+#define SFX_MAX 48
 #define SFX_MAX_ACTIVE 16
 
 void sfx_load(void);

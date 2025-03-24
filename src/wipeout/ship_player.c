@@ -25,21 +25,27 @@
 #include "ship_ai.h"
 #include "game.h"
 #include "particle.h"
+void sfx_update_ex(sfx_t *sfx);
 
 void ship_player_update_sfx(ship_t *self) {
 	float speedf = self->speed * 0.000015;
-	self->sfx_engine_intake->volume = clamp(speedf, 0, 0.5);
+	self->sfx_engine_intake->volume = clamp(speedf, 0, 1.0);
 	self->sfx_engine_intake->pitch = 0.5 + speedf * 1.25;
 
-	self->sfx_engine_thrust->volume = 0.05 + 0.025 * (self->thrust_mag / self->thrust_max);
+	self->sfx_engine_thrust->volume = clamp(0.05 + 0.025 * (self->thrust_mag / self->thrust_max) * 2.0, 0.0, 1.0);
 	self->sfx_engine_thrust->pitch = 0.2 + 0.5 * (self->thrust_mag / self->thrust_max) + speedf;
 
 	float brake_left = self->brake_left * 0.0035;
 	float brake_right = self->brake_right * 0.0035;
-	self->sfx_turbulence->volume = (speedf * brake_left + speedf * brake_right) * 0.5;
+	self->sfx_turbulence->volume = (speedf * brake_left + speedf * brake_right) * 1.5;
 	self->sfx_turbulence->pan = (brake_right - brake_left);
 
-	self->sfx_shield->volume = flags_is(self->flags, SHIP_SHIELDED) ? 0.5 : 0;
+	self->sfx_shield->volume = flags_is(self->flags, SHIP_SHIELDED) ? 1.0 : 0;
+
+	sfx_update_ex(self->sfx_engine_intake);
+	sfx_update_ex(self->sfx_engine_thrust);
+	sfx_update_ex(self->sfx_turbulence);
+	sfx_update_ex(self->sfx_shield);
 }
 
 void ship_player_update_intro(ship_t *self) {
@@ -114,7 +120,7 @@ void ship_player_update_intro_await_go(ship_t *self) {
 
 void ship_player_update_intro_general(ship_t *self) {
 	self->update_timer -= system_tick();
-	self->position.y = self->temp_target.y + sin(self->update_timer * 80.0 * 30.0 * M_PI * 2.0 / 4096.0) * 32;
+	self->position.y = self->temp_target.y + sinf(self->update_timer * 80.0 * 30.0 * twopi_i754 / 4096.0) * 32;
 
 	// Thrust
 	if (input_state(A_THRUST)) {
@@ -301,22 +307,29 @@ void ship_player_update_race(ship_t *self) {
 		// point and the track vertices will be M_PI*2.
 		// If it's less then M_PI*2 (minus a safety margin) we are flying!
 
-		vec3_t face_point = face->tris[0].vertices[0].pos;
+		//vec3_t face_point = face->tris[0].vertices[0].pos;
+		vec3_t face_point = vec3(face->tris[0].vertices[0].x, face->tris[0].vertices[0].y, face->tris[0].vertices[0].z);
+		vec3_t fp1 = vec3(face->tris[0].vertices[1].x, face->tris[0].vertices[1].y, face->tris[0].vertices[1].z);
+		vec3_t fp2 = vec3(face->tris[0].vertices[2].x, face->tris[0].vertices[2].y, face->tris[0].vertices[2].z);
+		vec3_t fp3 = vec3(face->tris[1].vertices[0].x, face->tris[1].vertices[0].y, face->tris[1].vertices[0].z);
 		float height = vec3_distance_to_plane(self->position, face_point,  face->normal);
 		vec3_t plane_point = vec3_sub(self->position, vec3_mulf(face->normal, height));
 
-		vec3_t vec0 = vec3_sub(plane_point, face->tris[0].vertices[1].pos);
-		vec3_t vec1 = vec3_sub(plane_point, face->tris[0].vertices[2].pos);
+		vec3_t vec0 = vec3_sub(plane_point, fp1);//face->tris[0].vertices[1].pos);
+		vec3_t vec1 = vec3_sub(plane_point, fp2);//face->tris[0].vertices[2].pos);
 		face++;
-		vec3_t vec2 = vec3_sub(plane_point, face->tris[0].vertices[0].pos);
-		vec3_t vec3 = vec3_sub(plane_point, face->tris[1].vertices[0].pos);
+		face_point = vec3(face->tris[0].vertices[0].x, face->tris[0].vertices[0].y, face->tris[0].vertices[0].z);
+		fp3 = vec3(face->tris[1].vertices[0].x, face->tris[1].vertices[0].y, face->tris[1].vertices[0].z);
+		vec3_t vec2 = vec3_sub(plane_point, face_point);//face->tris[0].vertices[0].pos);
+		vec3_t vec3 = vec3_sub(plane_point, fp3);//face->tris[1].vertices[0].pos);
 
 		float angle = 
 			vec3_angle(vec0, vec2) +
 			vec3_angle(vec2, vec3) +
 			vec3_angle(vec3, vec1) +
 			vec3_angle(vec1, vec0);
-		if (angle < M_PI * 2 - 0.01) {
+		//if (angle < M_PI * 2 - 0.01) {
+		if (angle < twopi_i754 - 0.01f) {
 			flags_add(self->flags, SHIP_FLYING);
 		}
 	}
@@ -336,7 +349,8 @@ void ship_player_update_race(ship_t *self) {
 			self->velocity = vec3_add(self->velocity, vec3_mulf(track_direction, 30 * system_tick()));
 		}
 
-		vec3_t face_point = face->tris[0].vertices[0].pos;
+		//vec3_t face_point = face->tris[0].vertices[0].pos;
+		vec3_t face_point = vec3(face->tris[0].vertices[0].x, face->tris[0].vertices[0].y, face->tris[0].vertices[0].z);
 		float height = vec3_distance_to_plane(self->position, face_point, face->normal);
 
 		// Collision with floor
@@ -440,10 +454,10 @@ void ship_player_update_race(ship_t *self) {
 	// Orientation
 	if (self->angular_acceleration.y == 0) {
 		if (self->angular_velocity.y > 0) {
-			self->angular_acceleration.y -= min(self->turn_rate, self->angular_velocity.y / system_tick());
+			self->angular_acceleration.y -= fminf(self->turn_rate, self->angular_velocity.y / system_tick());
 		}
 		else if (self->angular_velocity.y < 0) {
-			self->angular_acceleration.y += min(self->turn_rate, -self->angular_velocity.y / system_tick());
+			self->angular_acceleration.y += fminf(self->turn_rate, -self->angular_velocity.y / system_tick());
 		}
 	}
 
@@ -451,7 +465,7 @@ void ship_player_update_race(ship_t *self) {
 	self->angular_velocity.y = clamp(self->angular_velocity.y, -self->turn_rate_max, self->turn_rate_max);
 	
 	float brake_dir = (self->brake_left - self->brake_right) * (0.125 / 4096.0);
-	self->angle.y += brake_dir * self->speed * 0.000030517578125 * M_PI * 2 * 30 * system_tick();
+	self->angle.y += brake_dir * self->speed * 0.000030517578125 * twopi_i754 * 30 * system_tick();
 
 	self->angle = vec3_add(self->angle, vec3_mulf(self->angular_velocity, system_tick()));
 	self->angle.z -= self->angle.z * 0.125 * 30 * system_tick();
@@ -476,7 +490,7 @@ void ship_player_update_rescue(ship_t *self) {
 		self->velocity = vec3_sub(self->temp_target, self->position);
 		vec3_t target_dir = vec3_sub(next->center, self->section->center);
 
-		self->angular_velocity.y = wrap_angle(-atan2(target_dir.x, target_dir.z) - self->angle.y) * (1.0/16.0) * 30;
+		self->angular_velocity.y = wrap_angle(-bump_atan2f(target_dir.x, target_dir.z) - self->angle.y) * (1.0/16.0) * 30;
 		self->angle.y = wrap_angle(self->angle.y + self->angular_velocity.y * system_tick());
 	}
 

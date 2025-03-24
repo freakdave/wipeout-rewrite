@@ -18,6 +18,8 @@
 static texture_list_t weapon_icon_textures;
 static uint16_t target_reticle;
 
+extern uint16_t HUD_NO_TEXTURE;
+
 typedef struct {
 	vec2i_t offset;
 	uint16_t height;
@@ -50,12 +52,17 @@ const struct {
 
 static uint16_t speedo_facia_texture;
 
+int LOAD_UNFILTERED = 0;
+
 void hud_load(void) {
+	LOAD_UNFILTERED = 1;
 	speedo_facia_texture = image_get_texture("wipeout/textures/speedo.tim");
 	target_reticle = image_get_texture_semi_trans("wipeout/textures/target2.tim");
 	weapon_icon_textures = image_get_compressed_textures("wipeout/common/wicons.cmp");
+	LOAD_UNFILTERED = 0;
 }
-
+#include <kos.h>
+extern pvr_vertex_t __attribute__((aligned(32))) vs[4];
 static void hud_draw_speedo_bar(vec2i_t *pos, const speedo_bar_t *a, const speedo_bar_t *b, float f, rgba_t color_override) {
 	rgba_t left_color, right_color;
 	if (color_override.a > 0) {
@@ -83,45 +90,39 @@ static void hud_draw_speedo_bar(vec2i_t *pos, const speedo_bar_t *a, const speed
 	top_right    = ui_scaled(top_right);
 	bottom_right = ui_scaled(bottom_right);
 
-	render_push_tris((tris_t) {
-		.vertices = {
-			{
-				.pos = {pos->x + bottom_left.x, pos->y + bottom_left.y, 0},
-				.uv = {0, 0},
-				.color = left_color
-			},
-			{
-				.pos = {pos->x + top_right.x, pos->y + top_right.y, 0},
-				.uv = {0, 0},
-				.color = right_color
-			},
-			{
-				.pos = {pos->x + top_left.x, pos->y + top_left.y, 0},
-				.uv = {0, 0},
-				.color = left_color
-			},
-		}
-	}, RENDER_NO_TEXTURE);
+	uint32_t lcol,rcol;
+	lcol = (left_color.a << 24) | (left_color.r << 16) | (left_color.g << 8) | left_color.b;
+	rcol = (right_color.a << 24) | (right_color.r << 16) | (right_color.g << 8) | right_color.b;
 
-	render_push_tris((tris_t) {
-		.vertices = {
-			{
-				.pos = {pos->x + bottom_right.x, pos->y + bottom_right.y, 0},
-				.uv = {0, 0},
-				.color = right_color
-			},
-			{
-				.pos = {pos->x + top_right.x, pos->y + top_right.y, 0},
-				.uv = {0, 0},
-				.color = right_color
-			},
-			{
-				.pos = {pos->x + bottom_left.x, pos->y + bottom_left.y, 0},
-				.uv = {0, 0},
-				.color = left_color
-			},
-		}
-	}, RENDER_NO_TEXTURE);
+	vs[0].flags = PVR_CMD_VERTEX;
+	vs[0].x = pos->x + bottom_left.x;
+	vs[0].y = pos->y + bottom_left.y;
+	vs[0].z = 0;
+	vs[0].argb = lcol;
+	vs[0].oargb = 0;
+
+	vs[1].flags = PVR_CMD_VERTEX;
+	vs[1].x = pos->x + top_left.x;
+	vs[1].y = pos->y + top_left.y;
+	vs[1].z = 0;
+	vs[1].argb = lcol;
+	vs[1].oargb = 0;
+
+	vs[2].flags = PVR_CMD_VERTEX;
+	vs[2].x = pos->x + bottom_right.x;
+	vs[2].y = pos->y + bottom_right.y;
+	vs[2].z = 0;
+	vs[2].argb = rcol;
+	vs[2].oargb = 0;
+
+	vs[3].flags = PVR_CMD_VERTEX_EOL;
+	vs[3].x = pos->x + top_right.x;
+	vs[3].y = pos->y + top_right.y;
+	vs[3].z = 0;
+	vs[3].argb = rcol;
+	vs[3].oargb = 0;
+
+	render_noclip_quad(HUD_NO_TEXTURE);
 }
 
 static void hud_draw_speedo_bars(vec2i_t *pos, float f, rgba_t color_override) {
@@ -211,9 +212,11 @@ void hud_draw(ship_t *ship) {
 	}
 
 	// Framerate
-	if (save.show_fps) {
+	if (1) { //save.show_fps) {
+//	    pvr_stats_t stats;
+//		pvr_get_stats(&stats);
 		ui_draw_text("FPS", ui_scaled(vec2i(16, 78)), UI_SIZE_8, UI_COLOR_ACCENT);
-		ui_draw_number((int)(g.frame_rate), ui_scaled(vec2i(16, 90)), UI_SIZE_8, UI_COLOR_DEFAULT);
+		ui_draw_number((int)(g.frame_rate) /*(int)((float)(16666667*60) / (float)stats.frame_last_time)*/, ui_scaled(vec2i(16, 90)), UI_SIZE_8, UI_COLOR_DEFAULT);
 	}
 
 	// Lap Record

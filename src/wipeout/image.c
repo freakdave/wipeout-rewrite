@@ -16,31 +16,31 @@
 #include "image.h"
 
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
-
-
 #define TIM_TYPE_PALETTED_4_BPP 0x08
 #define TIM_TYPE_PALETTED_8_BPP 0x09
 #define TIM_TYPE_TRUE_COLOR_16_BPP 0x02
 
-static inline rgba_t tim_16bit_to_rgba(uint16_t c, bool transparent_bit) {
-	return rgba(
+#define get_color_argb1555(rrr, ggg, bbb, aaa)						\
+	((uint16_t)(((aaa & 1) << 15) | (((rrr >> 3) & 0x1f) << 10) |	\
+		    (((ggg >> 3) & 0x1f) << 5) | ((bbb >> 3) & 0x1f)))
+
+static inline uint16_t tim_16bit_to_argb1555(uint16_t c, bool transparent_bit) {
+	return get_color_argb1555(
 		((c >>  0) & 0x1f) << 3,
 		((c >>  5) & 0x1f) << 3,
 		((c >> 10) & 0x1f) << 3,
 		(c == 0 
 			? 0x00
-			: transparent_bit && (c & 0x7fff) == 0 ? 0x00 : 0xff
+			: transparent_bit && (c & 0x7fff) == 0 ? 0x00 : 1
 		)
 	);
 }
 
 image_t *image_alloc(uint32_t width, uint32_t height) {
-	image_t *image = mem_temp_alloc(sizeof(image_t) + width * height * sizeof(rgba_t));
+	image_t *image = mem_temp_alloc(sizeof(image_t) + width * height * sizeof(uint16_t));
 	image->width = width;
 	image->height = height;
-	image->pixels = (rgba_t *)(((uint8_t *)image) + sizeof(image_t));
+	image->pixels = (uint16_t *)(((uint8_t *)image) + sizeof(image_t));
 	return image;
 }
 
@@ -49,7 +49,7 @@ image_t *image_load_from_bytes(uint8_t *bytes, bool transparent) {
 
 	uint32_t magic = get_i32_le(bytes, &p);
 	uint32_t type = get_i32_le(bytes, &p);
-	rgba_t palette[256];
+	uint16_t palette[256];
 
 	if (
 		type == TIM_TYPE_PALETTED_4_BPP ||
@@ -61,7 +61,7 @@ image_t *image_load_from_bytes(uint8_t *bytes, bool transparent) {
 		uint16_t palette_colors = get_i16_le(bytes, &p);
 		uint16_t palettes = get_i16_le(bytes, &p);
 		for (int i = 0; i < palette_colors; i++) {
-			palette[i] = tim_16bit_to_rgba(get_u16_le(bytes, &p), transparent);
+			palette[i] = tim_16bit_to_argb1555(get_u16_le(bytes, &p), transparent);
 		}
 	}
 
@@ -89,7 +89,7 @@ image_t *image_load_from_bytes(uint8_t *bytes, bool transparent) {
 
 	if (type == TIM_TYPE_TRUE_COLOR_16_BPP) {
 		for (int i = 0; i < entries; i++) {
-			image->pixels[pixel_pos++] = tim_16bit_to_rgba(get_u16_le(bytes, &p), transparent);
+			image->pixels[pixel_pos++] = tim_16bit_to_argb1555(get_u16_le(bytes, &p), transparent);
 		}
 	}
 	else if (type == TIM_TYPE_PALETTED_8_BPP) {
@@ -226,7 +226,6 @@ void lzss_decompress(uint8_t *in_data, uint8_t *out_data) {
 }
 
 cmp_t *image_load_compressed(char *name) {
-	printf("load cmp %s\n", name);
 	uint32_t compressed_size;
 	uint8_t *compressed_bytes = platform_load_asset(name, &compressed_size);
 
@@ -260,7 +259,6 @@ cmp_t *image_load_compressed(char *name) {
 }
 
 uint16_t image_get_texture(char *name) {
-	printf("load: %s\n", name);
 	uint32_t size;
 	uint8_t *bytes = platform_load_asset(name, &size);
 	image_t *image = image_load_from_bytes(bytes, false);
@@ -272,7 +270,6 @@ uint16_t image_get_texture(char *name) {
 }
 
 uint16_t image_get_texture_semi_trans(char *name) {
-	printf("load: %s\n", name);
 	uint32_t size;
 	uint8_t *bytes = platform_load_asset(name, &size);
 	image_t *image = image_load_from_bytes(bytes, true);
@@ -290,11 +287,6 @@ texture_list_t image_get_compressed_textures(char *name) {
 	for (int i = 0; i < cmp->len; i++) {
 		int32_t width, height;
 		image_t *image = image_load_from_bytes(cmp->entries[i], false);
-
-		// char png_name[1024] = {0};
-		// sprintf(png_name, "%s.%d.png", name, i);
-		// stbi_write_png(png_name, image->width, image->height, 4, image->pixels, 0);
-
 		render_texture_create(image->width, image->height, image->pixels);
 		mem_temp_free(image);
 	}
@@ -309,8 +301,8 @@ uint16_t texture_from_list(texture_list_t tl, uint16_t index) {
 }
 
 void image_copy(image_t *src, image_t *dst, uint32_t sx, uint32_t sy, uint32_t sw, uint32_t sh, uint32_t dx, uint32_t dy) {
-	rgba_t *src_pixels = src->pixels + sy * src->width + sx;
-	rgba_t *dst_pixels = dst->pixels + dy * dst->width + dx;
+	uint16_t *src_pixels = src->pixels + sy * src->width + sx;
+	uint16_t *dst_pixels = dst->pixels + dy * dst->width + dx;
 	for (uint32_t y = 0; y < sh; y++) {
 		for (uint32_t x = 0; x < sw; x++) {
 			*(dst_pixels++) = *(src_pixels++);
@@ -319,4 +311,3 @@ void image_copy(image_t *src, image_t *dst, uint32_t sx, uint32_t sy, uint32_t s
 		dst_pixels += dst->width - sw;
 	}
 }
-

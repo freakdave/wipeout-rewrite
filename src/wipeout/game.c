@@ -176,17 +176,17 @@ const game_def_t def = {
 		},
 	},
 	.music = {
-		{.path = "wipeout/music/track01.qoa", .name = "CAIRODROME"},
-		{.path = "wipeout/music/track02.qoa", .name = "CARDINAL DANCER"},
-		{.path = "wipeout/music/track03.qoa", .name = "COLD COMFORT"},
-		{.path = "wipeout/music/track04.qoa", .name = "DOH T"},
-		{.path = "wipeout/music/track05.qoa", .name = "MESSIJ"},
-		{.path = "wipeout/music/track06.qoa", .name = "OPERATIQUE"},
-		{.path = "wipeout/music/track07.qoa", .name = "TENTATIVE"},
-		{.path = "wipeout/music/track08.qoa", .name = "TRANCEVAAL"},
-		{.path = "wipeout/music/track09.qoa", .name = "AFRO RIDE"},
-		{.path = "wipeout/music/track10.qoa", .name = "CHEMICAL BEATS"},
-		{.path = "wipeout/music/track11.qoa", .name = "WIPEOUT"},
+		{.path = "wipeout/music/track01.adpcm", .name = "CAIRODROME"},
+		{.path = "wipeout/music/track02.adpcm", .name = "CARDINAL DANCER"},
+		{.path = "wipeout/music/track03.adpcm", .name = "COLD COMFORT"},
+		{.path = "wipeout/music/track04.adpcm", .name = "DOH T"},
+		{.path = "wipeout/music/track05.adpcm", .name = "MESSIJ"},
+		{.path = "wipeout/music/track06.adpcm", .name = "OPERATIQUE"},
+		{.path = "wipeout/music/track07.adpcm", .name = "TENTATIVE"},
+		{.path = "wipeout/music/track08.adpcm", .name = "TRANCEVAAL"},
+		{.path = "wipeout/music/track09.adpcm", .name = "AFRO RIDE"},
+		{.path = "wipeout/music/track10.adpcm", .name = "CHEMICAL BEATS"},
+		{.path = "wipeout/music/track11.adpcm", .name = "WIPEOUT"},
 	},
 	.credits = {
 		"#MANAGING DIRECTORS",
@@ -398,8 +398,8 @@ save_t save = {
 	.music_volume = 0.5,
 	.internal_roll = 0.6,
 	.ui_scale = 0,
-	.show_fps = false,
-	.fullscreen = false,
+	.show_fps = true,
+	.fullscreen = true,
 	.screen_res = 0,
 	.post_effect = 0,
 
@@ -407,15 +407,15 @@ save_t save = {
 	.has_bonus_circuts = true, // for testing; should be false in prod
 
 	.buttons = {
-		[A_UP] = {INPUT_KEY_UP, INPUT_GAMEPAD_DPAD_UP},
-		[A_DOWN] = {INPUT_KEY_DOWN, INPUT_GAMEPAD_DPAD_DOWN},
-		[A_LEFT] = {INPUT_KEY_LEFT, INPUT_GAMEPAD_DPAD_LEFT},
-		[A_RIGHT] = {INPUT_KEY_RIGHT, INPUT_GAMEPAD_DPAD_RIGHT},
-		[A_BRAKE_LEFT] = {INPUT_KEY_C, INPUT_GAMEPAD_L_SHOULDER},
-		[A_BRAKE_RIGHT] = {INPUT_KEY_V, INPUT_GAMEPAD_R_SHOULDER},
-		[A_THRUST] = {INPUT_KEY_X, INPUT_GAMEPAD_A},
-		[A_FIRE] = {INPUT_KEY_Z, INPUT_GAMEPAD_X},
-		[A_CHANGE_VIEW] = {INPUT_KEY_A, INPUT_GAMEPAD_Y},
+		[A_UP] = {INPUT_GAMEPAD_DPAD_UP, INPUT_GAMEPAD_L_STICK_UP},
+		[A_DOWN] = {INPUT_GAMEPAD_DPAD_DOWN, INPUT_GAMEPAD_L_STICK_DOWN},
+		[A_LEFT] = {INPUT_GAMEPAD_DPAD_LEFT, INPUT_GAMEPAD_L_STICK_LEFT},
+		[A_RIGHT] = {INPUT_GAMEPAD_DPAD_RIGHT, INPUT_GAMEPAD_L_STICK_RIGHT},
+		[A_BRAKE_LEFT] = {INPUT_GAMEPAD_L_TRIGGER, INPUT_INVALID},
+		[A_BRAKE_RIGHT] = {INPUT_GAMEPAD_R_TRIGGER, INPUT_INVALID},
+		[A_THRUST] = {INPUT_GAMEPAD_A, INPUT_INVALID},
+		[A_FIRE] = {INPUT_GAMEPAD_X, INPUT_INVALID},
+		[A_CHANGE_VIEW] = {INPUT_GAMEPAD_Y, INPUT_INVALID},
 	},
 
 	.highscores_name = {0,0,0,0},
@@ -507,11 +507,11 @@ void game_init(void) {
 	save_t *save_file = (save_t *)platform_load_userdata("save.dat", &size);
 	if (save_file) {
 		if (size == sizeof(save_t) && save_file->magic == SAVE_DATA_MAGIC) {
-			printf("load save data success\n");
+			//printf("load save data success\n");
 			memcpy(&save, save_file, sizeof(save_t));
 		}
 		else {
-			printf("unexpected size/magic for save data");
+			//printf("unexpected size/magic for save data");
 		}
 		mem_temp_free(save_file);
 	}
@@ -535,7 +535,6 @@ void game_init(void) {
 
 	sfx_music_mode(SFX_MUSIC_PAUSED);
 	sfx_music_play(rand_int(0, len(def.music)));
-
 
 	// System binds; always fixed
 	// Keyboard
@@ -608,7 +607,7 @@ void game_reset_championship(void) {
 }
 
 void game_update(void) {
-	double frame_start_time = platform_now();
+	float frame_start_time = platform_now();
 
 	int sh = render_size().y;
 	int scale = max(1, sh >=  720 ? sh / 360 : sh / 240);
@@ -635,24 +634,24 @@ void game_update(void) {
 	}
 
 	// Fullscreen might have been toggled through alt+enter
-	bool fullscreen = platform_get_fullscreen();
-	if (fullscreen != save.fullscreen) {
-		save.fullscreen = fullscreen;
-		save.is_dirty = true;
-	}
+//	bool fullscreen = platform_get_fullscreen();
+//	if (fullscreen != save.fullscreen) {
+//		save.fullscreen = fullscreen;
+//		save.is_dirty = true;
+//	}
 
-	if (save.is_dirty) {
+//	if (save.is_dirty) {
 		// FIXME: use a text based format?
 		// FIXME: this should probably run async somewhere
-		save.is_dirty = false;
-		platform_store_userdata("save.dat", &save, sizeof(save_t));
-		printf("wrote save.dat\n");
-	}
+//		save.is_dirty = false;
+//		platform_store_userdata("save.dat", &save, sizeof(save_t));
+//		printf("wrote save.dat\n");
+//	}
 
-	double now = platform_now();
+	float now = platform_now();
 	g.frame_time = now - frame_start_time;
 	if (g.frame_time > 0) {
-		g.frame_rate = ((double)g.frame_rate * 0.95) + (1.0/g.frame_time) * 0.05;
+		g.frame_rate = (1.0f / g.frame_time);//((float)g.frame_rate * 0.95f) + (1.0f/g.frame_time) * 0.05f;
 	}
 }
 

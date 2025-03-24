@@ -19,9 +19,13 @@ static void page_hall_of_fame_init(menu_t * menu);
 static texture_list_t pilot_portraits;
 static menu_t *ingame_menu;
 
+extern int LOAD_UNFILTERED;
+
 void ingame_menus_load(void) {
+	LOAD_UNFILTERED = 1;
 	pilot_portraits = image_get_compressed_textures(def.pilots[g.pilot].portrait);
 	ingame_menu = mem_bump(sizeof(menu_t));
+	LOAD_UNFILTERED = 0;
 }
 
 // -----------------------------------------------------------------------------
@@ -449,10 +453,10 @@ static void page_hall_of_fame_init(menu_t *menu) {
 
 static char * const *text_scroll_lines;
 static int text_scroll_lines_len;
-static double text_scroll_start_time;
+static float text_scroll_start_time;
 
 static void text_scroll_menu_draw(menu_t *menu, int data) {
-	double time = system_time() - text_scroll_start_time;
+	float time = system_time() - text_scroll_start_time;
 	int scale = ui_get_scale();
 	int speed = 32;
 	vec2i_t screen = render_size();

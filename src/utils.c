@@ -5,11 +5,11 @@
 #include "utils.h"
 #include "mem.h"
 
-char temp_path[64];
+char temp_path2[64];
 char *get_path(const char *dir, const char *file) {
-	strcpy(temp_path, dir);
-	strcpy(temp_path + strlen(dir), file);
-	return temp_path;
+	strcpy(temp_path2, dir);
+	strcpy(temp_path2 + strlen(dir), file);
+	return temp_path2;
 }
 
 
@@ -44,6 +44,7 @@ uint8_t *file_load(const char *path, uint32_t *bytes_read) {
 }
 
 uint32_t file_store(const char *path, void *bytes, int32_t len) {
+#if 0
 	FILE *f = fopen(path, "wb");
 	error_if(!f, "Could not open file for writing: %s", path);
 
@@ -53,6 +54,8 @@ uint32_t file_store(const char *path, void *bytes, int32_t len) {
 	
 	fclose(f);
 	return len;
+#endif
+return 0;
 }
 
 bool str_starts_with(const char *haystack, const char *needle) {

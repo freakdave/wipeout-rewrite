@@ -4,13 +4,6 @@
 #include <string.h>
 #include "types.h"
 
-#ifdef WIN32
-	#undef min
-	#undef max
-	#undef near
-	#undef far
-#endif
-
 #if !defined(offsetof)
 	#define offsetof(TYPE, ELEMENT) ((size_t)&(((TYPE *)0)->ELEMENT))
 #endif
@@ -56,11 +49,17 @@
 	printf("\n"); \
 	exit(1)
 
+//#if WIPEOUT_DEBUG
+
 #define error_if(TEST, ...) \
 	if (TEST) { \
 		die(__VA_ARGS__); \
 	}
 
+//#else
+//#define error_if(TEST, ...) 
+//	;
+//#endif
 
 #define flags_add(FLAGS, F)  (FLAGS |= (F))
 #define flags_rm(FLAGS, F)   (FLAGS &= ~(F))
@@ -105,34 +104,75 @@ static inline uint8_t get_u8(uint8_t *bytes, uint32_t *p) {
 }
 
 static inline uint16_t get_u16(uint8_t *bytes, uint32_t *p) {
+	uint8_t b1;
+	uint8_t b2;
+
 	uint16_t v = 0;
-	v |= bytes[(*p)++] << 8;
-	v |= bytes[(*p)++] << 0;
+
+
+	uint32_t pval = *p;
+
+	//v |= 
+	b1 = bytes[pval++];// << 8;
+	//v |= 
+	b2 = bytes[pval++];// << 0;
+
+	v = (b1<<8) | b2;
+
+	*p = pval;
+
 	return v;
 }
 
-static inline uint32_t get_u32(uint8_t *bytes, uint32_t *p) {
+static inline uint32_t  get_u32(uint8_t *bytes, uint32_t *p) {
+	uint8_t b1;
+	uint8_t b2;
+	uint8_t b3;
+	uint8_t b4;
+
 	uint32_t v = 0;
-	v |= bytes[(*p)++] << 24;
-	v |= bytes[(*p)++] << 16;
-	v |= bytes[(*p)++] <<  8;
-	v |= bytes[(*p)++] <<  0;
+	//v |= 
+	b1 = bytes[(*p)++] ;
+	//v |= 
+	b2 = bytes[(*p)++] ;
+	//v |= 
+	b3 = bytes[(*p)++] ;
+	//v |= 
+	b4 = bytes[(*p)++] ;
+
+	v = (b1<<24) | (b2<<16) | (b3<<8) | (b4<<0);
+
 	return v;
 }
 
-static inline uint16_t get_u16_le(uint8_t *bytes, uint32_t *p) {
+static inline uint16_t  get_u16_le(uint8_t *bytes, uint32_t *p) {
+	uint8_t b1;
+	uint8_t b2;
 	uint16_t v = 0;
-	v |= bytes[(*p)++] << 0;
-	v |= bytes[(*p)++] << 8;
+	//v |= 
+	b1 = bytes[(*p)++];
+	//v |= 
+	b2 = bytes[(*p)++];
+	v = b1 | (b2 << 8);
 	return v;
 }
 
-static inline uint32_t get_u32_le(uint8_t *bytes, uint32_t *p) {
+static inline uint32_t  get_u32_le(uint8_t *bytes, uint32_t *p) {
 	uint32_t v = 0;
-	v |= bytes[(*p)++] <<  0;
-	v |= bytes[(*p)++] <<  8;
-	v |= bytes[(*p)++] << 16;
-	v |= bytes[(*p)++] << 24;
+	uint8_t b1;
+	uint8_t b2;
+	uint8_t b3;
+	uint8_t b4;
+
+	//v |= bytes[(*p)++] <<  0;
+	b1 = bytes[(*p)++];
+	b2 = bytes[(*p)++];
+	b3 = bytes[(*p)++];
+	b4 = bytes[(*p)++];
+	//v |= bytes[(*p)++] <<  8;
+	//v |= bytes[(*p)++] << 16;
+	//v |= bytes[(*p)++] << 24;
+	v = b1 | (b2 << 8) | (b3 << 16) | (b4 << 24);
 	return v;
 }
 

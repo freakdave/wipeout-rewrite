@@ -24,6 +24,8 @@ void *mem_mark(void) {
 
 void *mem_bump(uint32_t size) {
 	error_if(bump_len + temp_len + size >= MEM_HUNK_BYTES, "Failed to allocate %d bytes in hunk mem", size);
+	// need 4-byte alignment here
+	bump_len = (bump_len + 3) & ~3;
 	uint8_t *p = &hunk[bump_len];
 	bump_len += size;
 	memset(p, 0, size);
@@ -46,7 +48,7 @@ void mem_reset(void *p) {
 // and aftewards free A then B.
 
 void *mem_temp_alloc(uint32_t size) {
-	size = ((size + 7) >> 3) << 3; // allign to 8 bytes
+	size = ((size + 7) >> 3) << 3; // align to 8 bytes
 
 	error_if(bump_len + temp_len + size >= MEM_HUNK_BYTES, "Failed to allocate %d bytes in temp mem", size);
 	error_if(temp_objects_len >= MEM_TEMP_OBJECTS_MAX, "MEM_TEMP_OBJECTS_MAX reached");
@@ -54,12 +56,13 @@ void *mem_temp_alloc(uint32_t size) {
 	temp_len += size;
 	void *p = &hunk[MEM_HUNK_BYTES - temp_len];
 	temp_objects[temp_objects_len++] = temp_len;
+
 	return p;
 }
 
 void mem_temp_free(void *p) {
 	uint32_t offset = (uint8_t *)&hunk[MEM_HUNK_BYTES] - (uint8_t *)p;
-	error_if(offset > MEM_HUNK_BYTES, "Object 0x%p not in temp hunk", p);
+	error_if(offset > MEM_HUNK_BYTES, "Object %p not in temp hunk", p);
 
 	bool found = false;
 	uint32_t remaining_max = 0;

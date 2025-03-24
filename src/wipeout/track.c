@@ -169,20 +169,93 @@ void track_load_faces(char *file_name, vec3_t *vertices) {
 		tf->flags = get_i8(bytes, &p);
 
 		rgba_t color = rgba_from_u32(get_u32(bytes, &p));
+#if 0
+		if (color.r < 0xa0 && color.g < 0xa0 && color.b < 0xa0) {
+			color.r += 0x20;
+			color.g += 0x20;
+			color.b += 0x20;
+		}
+#endif
+		uint32_t lcol = 0xff000000 | (color.r << 16) | (color.g << 8) | (color.b);
+
 		const vec2_t *uv = track_uv[flags_is(tf->flags, FACE_FLIP_TEXTURE) ? 1 : 0];
 
 		tf->tris[0] = (tris_t){
 			.vertices = {
-				{.pos = v0, .uv = uv[0], .color = color},
-				{.pos = v1, .uv = uv[1], .color = color},
-				{.pos = v2, .uv = uv[2], .color = color},
+				{//.pos = v0, .uv = uv[0], .color = color,
+//						.spec = 0
+				.flags = PVR_CMD_VERTEX,
+				.x = v0.x,
+				.y = v0.y,
+				.z = v0.z,
+				.u = uv[0].x,
+				.v = uv[0].y,
+				.argb = lcol,
+				.oargb = 0,
+				},
+				{//.pos = v1, .uv = uv[1], .color = color,
+						//.spec = 0
+				.flags = PVR_CMD_VERTEX,
+				.x = v1.x,
+				.y = v1.y,
+				.z = v1.z,
+				.u = uv[1].x,
+				.v = uv[1].y,
+				.argb = lcol,
+				.oargb = 0,
+				},
+				{//.pos = v2, .uv = uv[2], .color = color,
+//						.spec = 0
+				.flags = PVR_CMD_VERTEX_EOL,
+				.x = v2.x,
+				.y = v2.y,
+				.z = v2.z,
+				.u = uv[2].x,
+				.v = uv[2].y,
+				.argb = lcol,
+				.oargb = 0,
+						
+				},
 			}
 		};
 		tf->tris[1] = (tris_t){
 			.vertices = {
-				{.pos = v3, .uv = uv[3], .color = color},
-				{.pos = v0, .uv = uv[0], .color = color},
-				{.pos = v2, .uv = uv[2], .color = color},
+				{//.pos = v3, .uv = uv[3], .color = color,
+					//	.spec = 0
+				.flags = PVR_CMD_VERTEX,
+				.x = v3.x,
+				.y = v3.y,
+				.z = v3.z,
+				.u = uv[3].x,
+				.v = uv[3].y,
+				.argb = lcol,
+				.oargb = 0,
+					
+					},
+				{//.pos = v0, .uv = uv[0], .color = color,
+					//	.spec = 0
+				.flags = PVR_CMD_VERTEX,
+				.x = v0.x,
+				.y = v0.y,
+				.z = v0.z,
+				.u = uv[0].x,
+				.v = uv[0].y,
+				.argb = lcol,
+				.oargb = 0,
+				},
+				{//.pos = v2, .uv = uv[2], .color = color,
+					//	.spec = 0
+					
+				.flags = PVR_CMD_VERTEX_EOL,
+				.x = v2.x,
+				.y = v2.y,
+				.z = v2.z,
+				.u = uv[2].x,
+				.v = uv[2].y,
+				.argb = lcol,
+				.oargb = 0,
+					
+					},
 			}
 		};
 
@@ -243,7 +316,8 @@ void track_load_sections(char *file_name) {
 	mem_temp_free(bytes);
 }
 
-
+#include <kos.h>
+extern pvr_vertex_t __attribute__((aligned(32))) vs[4];
 
 
 void track_draw_section(section_t *section) {
@@ -252,8 +326,14 @@ void track_draw_section(section_t *section) {
 	
 	for (uint32_t j = 0; j < face_count; j++) {
 		uint16_t tex_index = texture_from_list(g.track.textures, face->texture);
-		render_push_tris(face->tris[0], tex_index);
-		render_push_tris(face->tris[1], tex_index);
+
+		// I don't *like* copying but this is about as good as it gets
+		memcpy(&vs[0], &face->tris[0].vertices[0], 96);
+		render_tri(tex_index);
+
+		memcpy(&vs[0], &face->tris[1].vertices[0], 96);
+		render_tri(tex_index);
+
 		face++;
 	}
 }
@@ -293,9 +373,9 @@ void track_cycle_pickups(void) {
 		else if (g.track.pickups[i].cooldown_timer <= 0) {
 			flags_add(g.track.pickups[i].face->flags, FACE_PICKUP_ACTIVE);
 			track_face_set_color(g.track.pickups[i].face, rgba(
-				sin( pickup_cycle_time + i) * 127 + 128,
-				cos( pickup_cycle_time + i) * 127 + 128,
-				sin(-pickup_cycle_time - i) * 127 + 128,
+				sinf( pickup_cycle_time + i) * 127 + 128,
+				cosf( pickup_cycle_time + i) * 127 + 128,
+				sinf(-pickup_cycle_time - i) * 127 + 128,
 				255
 			));
 		}
@@ -306,13 +386,15 @@ void track_cycle_pickups(void) {
 }
 
 void track_face_set_color(track_face_t *face, rgba_t color) {
-	face->tris[0].vertices[0].color = color;
-	face->tris[0].vertices[1].color = color;
-	face->tris[0].vertices[2].color = color;
+	uint32_t lcol = 0xff000000 | (color.r << 16) | (color.g << 8) | (color.b);
 
-	face->tris[1].vertices[0].color = color;
-	face->tris[1].vertices[1].color = color;
-	face->tris[1].vertices[2].color = color;
+	face->tris[0].vertices[0].argb = lcol;
+	face->tris[0].vertices[1].argb = lcol;
+	face->tris[0].vertices[2].argb = lcol;
+
+	face->tris[1].vertices[0].argb = lcol;
+	face->tris[1].vertices[1].argb = lcol;
+	face->tris[1].vertices[2].argb = lcol;
 }
 
 track_face_t *track_section_get_base_face(section_t *section) {

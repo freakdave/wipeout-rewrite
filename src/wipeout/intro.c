@@ -16,6 +16,7 @@ void *realloc_dummmy(void *p, size_t sz) {
 	return NULL;
 }
 
+#if 0
 #define PL_MPEG_IMPLEMENTATION
 #define PLM_MALLOC mem_bump
 #define PLM_FREE free_dummmy
@@ -24,24 +25,25 @@ void *realloc_dummmy(void *p, size_t sz) {
 
 #define INTRO_AUDIO_BUFFER_LEN (64 * 1024)
 
-static plm_t *plm;
-static rgba_t *frame_buffer;
-static int16_t texture;
-static float *audio_buffer;
-static int audio_buffer_read_pos;
-static int audio_buffer_write_pos;
+//static plm_t *plm;
+#endif
+//static rgba_t *frame_buffer;
+//static int16_t texture;
+//static float *audio_buffer;
+//static int audio_buffer_read_pos;
+//static int audio_buffer_write_pos;
 
-static void video_cb(plm_t *plm, plm_frame_t *frame, void *user);
-static void audio_cb(plm_t *plm, plm_samples_t *samples, void *user);
-static void audio_mix(float *samples, uint32_t len);
+//static void video_cb(plm_t *plm, plm_frame_t *frame, void *user);
+//static void audio_cb(plm_t *plm, plm_samples_t *samples, void *user);
+//static void audio_mix(float *samples, uint32_t len);
 static void intro_end(void);
 
 void intro_init(void) {
-	FILE *file = platform_open_asset("wipeout/intro.mpeg", "rb");
-	if (!file) {
+//	FILE *file = platform_open_asset("wipeout/intro.mpeg", "rb");
+//	if (!file) {
 		intro_end();
 		return;
-	}
+/*	}
 
 	plm = plm_create_with_file(file, true);
 	if (!plm) {
@@ -66,47 +68,47 @@ void intro_init(void) {
 	sfx_set_external_mix_cb(audio_mix);
 	audio_buffer = mem_bump(INTRO_AUDIO_BUFFER_LEN * sizeof(float) * 2);
 	audio_buffer_read_pos = 0;
-	audio_buffer_write_pos = 0;
+	audio_buffer_write_pos = 0;*/
 }
 
 static void intro_end(void) {
-	sfx_set_external_mix_cb(NULL);
+//	sfx_set_external_mix_cb(NULL);
 	game_set_scene(GAME_SCENE_TITLE);
 }
 
 void intro_update(void) {
-	if (!plm) {
-		return;
-	}
-	plm_decode(plm, system_tick());
-	render_set_view_2d();
-	render_push_2d(vec2i(0,0), render_size(), rgba(128, 128, 128, 255), texture);
-	if (plm_has_ended(plm) || input_pressed(A_MENU_SELECT) || input_pressed(A_MENU_START)) {
-		intro_end();
-	}
+//	if (!plm) {
+//		return;
+//	}
+//	plm_decode(plm, system_tick());
+//	render_set_view_2d();
+//	render_push_2d(vec2i(0,0), render_size(), rgba(128, 128, 128, 255), texture);
+//	if (plm_has_ended(plm) || input_pressed(A_MENU_SELECT) || input_pressed(A_MENU_START)) {
+//		intro_end();
+//	}
 }
 
-static void audio_cb(plm_t *plm, plm_samples_t *samples, void *user) {
-	int len = samples->count * 2;
-	for (int i = 0; i < len; i++) {
-		audio_buffer[audio_buffer_write_pos % INTRO_AUDIO_BUFFER_LEN] = samples->interleaved[i];
-		audio_buffer_write_pos++;
-	}
+static void audio_cb(void) { //plm_t *plm, plm_samples_t *samples, void *user) {
+//	int len = samples->count * 2;
+//	for (int i = 0; i < len; i++) {
+//		audio_buffer[audio_buffer_write_pos % INTRO_AUDIO_BUFFER_LEN] = samples->interleaved[i];
+//		audio_buffer_write_pos++;
+//	}
 }
 
 static void audio_mix(float *samples, uint32_t len) {
-	int i;
-	for (i = 0; i < len && audio_buffer_read_pos < audio_buffer_write_pos; i++) {
-		samples[i] = audio_buffer[audio_buffer_read_pos % INTRO_AUDIO_BUFFER_LEN];
-		audio_buffer_read_pos++;
-	}
-	for (; i < len; i++) {
-		samples[i] = 0;
-	}
+//	int i;
+//	for (i = 0; i < len && audio_buffer_read_pos < audio_buffer_write_pos; i++) {
+//		samples[i] = audio_buffer[audio_buffer_read_pos % INTRO_AUDIO_BUFFER_LEN];
+//		audio_buffer_read_pos++;
+//	}
+//	for (; i < len; i++) {
+//		samples[i] = 0;
+//	}
 }
 
-static void video_cb(plm_t *plm, plm_frame_t *frame, void *user) {
-	plm_frame_to_rgba(frame, (uint8_t *)frame_buffer, plm_get_width(plm) * sizeof(rgba_t));
-	render_texture_replace_pixels(texture, frame_buffer);
-}
+//static void video_cb(plm_t *plm, plm_frame_t *frame, void *user) {
+//	plm_frame_to_rgba(frame, (uint8_t *)frame_buffer, plm_get_width(plm) * sizeof(rgba_t));
+//	render_texture_replace_pixels(texture, frame_buffer);
+//}
 

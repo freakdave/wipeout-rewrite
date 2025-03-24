@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
+#include <kos.h>
 typedef struct rgba_t {
 	uint8_t r, g, b, a;
 } rgba_t;
@@ -34,12 +34,18 @@ typedef struct {
 	vec3_t pos;
 	vec2_t uv;
 	rgba_t color;
+	int spec;
 } vertex_t;
 
 typedef struct {
-	vertex_t vertices[3];
+	pvr_vertex_t vertices[3];
 } tris_t;
 
+#if 0
+typedef struct {
+	pvr_vertex_t vertices[4];
+} quad_t;
+#endif
 
 #define rgba(R, G, B, A) ((rgba_t){.r = R, .g = G, .b = B, .a = A})
 #define vec2(X, Y) ((vec2_t){.x = X, .y = Y})
@@ -47,11 +53,11 @@ typedef struct {
 #define vec2i(X, Y) ((vec2i_t){.x = X, .y = Y})
 
 #define mat4(m0,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15) \
-	(mat4_t){.m = { \
-		m0,   m1,  m2,  m3, \
-		m4,   m5,  m6,  m7, \
-		m8,   m9, m10, m11, \
-		m12, m13, m14, m15  \
+	(mat4_t){.cols = { \
+		{m0,   m1,  m2,  m3}, \
+		{m4,   m5,  m6,  m7}, \
+		{m8,   m9, m10, m11}, \
+		{m12, m13, m14, m15}  \
 	}}
 
 #define mat4_identity() mat4( \
@@ -60,6 +66,24 @@ typedef struct {
 		0, 0, 1, 0, \
 		0, 0, 0, 1 \
 	)
+
+// branch-free, division-free atan2f approximation
+// copysignf has a branch
+#define quarterpi_i754 0.785398185253143310546875f
+#define halfpi_i754 1.57079637050628662109375f
+#define pi_i754 3.1415927410125732421875f
+#define twopi_i754 6.283185482025146484375f
+#define approx_recip(x) (1.0f / sqrtf((x)*(x)))
+static inline float bump_atan2f(const float y, const float x)
+{
+	float abs_y = fabsf(y) + 1e-10f;
+	float absy_plus_absx = abs_y + fabsf(x);
+	float inv_absy_plus_absx = approx_recip(absy_plus_absx);
+	float angle = halfpi_i754 - copysignf(quarterpi_i754, x);
+	float r = (x - copysignf(abs_y, x)) * inv_absy_plus_absx;
+	angle += (0.1963f * r * r - 0.9817f) * r;
+	return copysignf(angle, y);
+}
 
 static inline vec2_t vec2_mulf(vec2_t a, float f) {
 	return vec2(
@@ -108,32 +132,88 @@ static inline vec3_t vec3_mulf(vec3_t a, float f) {
 	);
 }
 
+#if 0
+static inline pvr_vertex_t *vert_mulf(pvr_vertex_t *a, float f) {
+	//return vec3(
+	//	a.x * f,
+	//	a.y * f,
+	//	a.z * f
+	//);
+	a->x *= f;
+	a->y *= f;
+	a->z *= f;
+	return a;
+}
+#endif
+
 static inline vec3_t vec3_inv(vec3_t a) {
 	return vec3(-a.x, -a.y, -a.z);
 }
 
 static inline vec3_t vec3_divf(vec3_t a, float f) {
+	float rf = approx_recip(f);
+	if (f < 0) {
+//		printf("neg div\n");
+		rf = -rf;
+	}
 	return vec3(
-		a.x / f,
-		a.y / f,
-		a.z / f
+		a.x * rf,
+		a.y * rf,
+		a.z * rf
 	);
 }
 
 static inline float vec3_len(vec3_t a) {
-	return sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+	float len;
+	vec3f_length(a.x, a.y, a.z, len);
+	//sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+	return len;
 }
 
+extern mat4_t __attribute__((aligned(32))) cross_mat;
+extern mat4_t __attribute__((aligned(32))) store_mat;
+
+#include <kos.h>
 static inline vec3_t vec3_cross(vec3_t a, vec3_t b) {
+
+	float bx = fipr(a.y, -a.z, 0, 0, b.z, b.y, 0, 0);
+	float by = fipr(a.z, -a.x, 0, 0, b.x, b.z, 0, 0);
+	float bz = fipr(a.x, -a.y, 0, 0, b.y, b.x, 0, 0);
+	return vec3(bx,by,bz);
+
+#if 0
+	mat_store(&store_mat.cols);
+
+	cross_mat.cols[0][1] = -a.z;
+	cross_mat.cols[0][2] = a.y;
+	cross_mat.cols[1][0] = a.z;
+	cross_mat.cols[1][2] = -a.x;
+	cross_mat.cols[2][0] = -a.y;
+	cross_mat.cols[2][1] = a.x;
+	mat_load(&cross_mat.cols);
+	float bx=b.x;float by=b.z;float bz=b.z;
+	mat_trans_single3_nodiv(bx,by,bz);
+	mat_load(&store_mat.cols);
+
+	return vec3(
+		bx,//a.y * b.z - a.z * b.y,
+		by,//a.z * b.x - a.x * b.z,
+		bz//a.x * b.y - a.y * b.x
+	);
+/*
 	return vec3(
 		a.y * b.z - a.z * b.y,
 		a.z * b.x - a.x * b.z,
 		a.x * b.y - a.y * b.x
-	);
+	);*/
+#endif	
 }
 
 static inline float vec3_dot(vec3_t a, vec3_t b) {
-	return a.x * b.x + a.y * b.y + a.z * b.z;
+	//return a.x * b.x + a.y * b.y + a.z * b.z;
+	float dot;
+	vec3f_dot(a.x, a.y, a.z, b.x, b.y, b.z, dot);
+	return dot;
 }
 
 static inline vec3_t vec3_lerp(vec3_t a, vec3_t b, float t) {
@@ -145,23 +225,32 @@ static inline vec3_t vec3_lerp(vec3_t a, vec3_t b, float t) {
 }
 
 static inline vec3_t vec3_normalize(vec3_t a) {
+#if 0
 	float length = vec3_len(a);
 	return vec3(
 		a.x / length,
 		a.y / length,
 		a.z / length
 	);
+#endif
+//	float x = a.x;
+//	float y = a.y;
+//	float z = a.z;
+	vec3f_normalize(a.x,a.y,a.z);
+	return a;//vec3(x,y,z);	
 }
 
 static inline float wrap_angle(float a) {
-	a = fmod(a + M_PI, M_PI * 2);
+	a = fmodf(a + F_PI, twopi_i754);
+
 	if (a < 0) {
-		a += M_PI * 2;
+		a += twopi_i754;
 	}
-	return a - M_PI;
+
+	return a - F_PI;
 }
 
-rgba_t rgba_from_u32(uint32_t v);
+rgba_t __attribute__((noinline)) rgba_from_u32(uint32_t v);
 float vec3_angle(vec3_t a, vec3_t b);
 vec3_t vec3_wrap_angle(vec3_t a);
 vec3_t vec3_normalize(vec3_t a);

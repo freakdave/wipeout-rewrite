@@ -30,7 +30,7 @@ void ship_ai_update_intro(ship_t *self) {
 }
 
 void ship_ai_update_intro_await_go(ship_t *self) {
-	self->position.y = self->temp_target.y + sin(self->update_timer * (80.0 + self->pilot * 3.0) * 30.0 * M_PI * 2.0 / 4096.0) * 32;
+	self->position.y = self->temp_target.y + sinf(self->update_timer * (80.0 + self->pilot * 3.0) * 30.0 * twopi_i754 / 4096.0) * 32;
 
 	self->update_timer -= system_tick();
 	if (self->update_timer <= UPDATE_TIME_GO) {
@@ -39,15 +39,19 @@ void ship_ai_update_intro_await_go(ship_t *self) {
 }
 
 vec3_t ship_ai_strat_hold_left(ship_t *self, track_face_t *face) {
-	vec3_t fv1 = face->tris[0].vertices[1].pos;
-	vec3_t fv2 = face->tris[0].vertices[0].pos;
+	vec3_t fv1 = vec3(face->tris[0].vertices[1].x, face->tris[0].vertices[1].y, face->tris[0].vertices[1].z);
+	vec3_t fv2 = vec3(face->tris[0].vertices[0].x, face->tris[0].vertices[0].y, face->tris[0].vertices[0].z);
+	//vec3_t fv1 = face->tris[0].vertices[1].pos;
+	//vec3_t fv2 = face->tris[0].vertices[0].pos;
 
 	return vec3_mulf(vec3_sub(fv1, fv2), 0.5);
 }
 
 vec3_t ship_ai_strat_hold_right(ship_t *self, track_face_t *face) {
-	vec3_t fv1 = face->tris[0].vertices[0].pos;
-	vec3_t fv2 = face->tris[0].vertices[1].pos;
+	//vec3_t fv1 = face->tris[0].vertices[0].pos;
+	//vec3_t fv2 = face->tris[0].vertices[1].pos;
+	vec3_t fv1 = vec3(face->tris[0].vertices[0].x, face->tris[0].vertices[0].y, face->tris[0].vertices[0].z);
+	vec3_t fv2 = vec3(face->tris[0].vertices[1].x, face->tris[0].vertices[1].y, face->tris[0].vertices[1].z);
 
 	return vec3_mulf(vec3_sub(fv1, fv2), 0.5);
 }
@@ -428,8 +432,8 @@ void ship_ai_update_race(ship_t *self) {
 
 		// Bleed off speed as orientation changes
 
-		self->speed -= fabsf(self->speed * self->angular_velocity.y) * 4 / (M_PI * 2) * system_tick(); // >> 14
-		self->speed -= fabsf(self->speed * self->angular_velocity.x) * 4 / (M_PI * 2) * system_tick(); // >> 14
+		self->speed -= fabsf(self->speed * self->angular_velocity.y) * 4 / (twopi_i754) * system_tick(); // >> 14
+		self->speed -= fabsf(self->speed * self->angular_velocity.x) * 4 / (twopi_i754) * system_tick(); // >> 14
 
 		// If remote has gone over boost
 		if (flags_is(face->flags, FACE_BOOST) && (self->update_strat_func == ship_ai_strat_hold_left || self->update_strat_func == ship_ai_strat_hold_center)) {
@@ -458,7 +462,8 @@ void ship_ai_update_race(ship_t *self) {
 		self->acceleration = vec3_add(track_target, vec3_mulf(vec3_sub(best_path, self->position), 0.5));
 
 
-		vec3_t face_point = face->tris[0].vertices[0].pos;
+		//vec3_t face_point = face->tris[0].vertices[0].pos;
+		vec3_t face_point = vec3(face->tris[0].vertices[0].x, face->tris[0].vertices[0].y, face->tris[0].vertices[0].z);
 		float height = vec3_distance_to_plane(self->position, face_point, face->normal);
 
 		if (height < 50) {
@@ -472,10 +477,10 @@ void ship_ai_update_race(ship_t *self) {
 		self->velocity = vec3_add(self->velocity, vec3_mulf(self->acceleration, 30 * system_tick()));
 
 
-		float xy_dist = sqrt(track_target.x * track_target.x + track_target.z * track_target.z);
+		float xy_dist = sqrtf(track_target.x * track_target.x + track_target.z * track_target.z);
 
-		self->angular_velocity.x = wrap_angle(-atan2(track_target.y, xy_dist) - self->angle.x) * (1.0/16.0) * 30;
-		self->angular_velocity.y = (wrap_angle(-atan2(track_target.x, track_target.z) - self->angle.y) * (1.0/16.0)) * 30 + self->turn_rate_from_hit;
+		self->angular_velocity.x = wrap_angle(-bump_atan2f(track_target.y, xy_dist) - self->angle.x) * (1.0/16.0) * 30;
+		self->angular_velocity.y = (wrap_angle(-bump_atan2f(track_target.x, track_target.z) - self->angle.y) * (1.0/16.0)) * 30 + self->turn_rate_from_hit;
 	}
 
 
@@ -492,7 +497,7 @@ void ship_ai_update_race(ship_t *self) {
 			self->speed += self->remote_thrust_mag ;
 		}
 
-		self->speed -= fabsf(self->speed * self->angular_velocity.y) * (4 * M_PI * 2) * system_tick();
+		self->speed -= fabsf(self->speed * self->angular_velocity.y) * (4 * twopi_i754) * system_tick();
 		vec3_t track_target = vec3_sub(next->center, section->center);
 		float gap_length = vec3_len(track_target);
 
@@ -510,7 +515,7 @@ void ship_ai_update_race(ship_t *self) {
 		self->velocity = vec3_add(self->velocity, vec3_mulf(self->acceleration, 30 * system_tick()));
 
 		self->angular_velocity.x = -0.3 - self->angle.x * 30;
-		self->angular_velocity.y = wrap_angle(-atan2(track_target.x, track_target.z) - self->angle.y) * (1.0/16.0) * 30;
+		self->angular_velocity.y = wrap_angle(-bump_atan2f(track_target.x, track_target.z) - self->angle.y) * (1.0/16.0) * 30;
 	}
 
 	
