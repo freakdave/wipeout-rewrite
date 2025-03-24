@@ -399,11 +399,11 @@ save_t save = {
 	.magic = SAVE_DATA_MAGIC,
 	.is_dirty = true,
 
-	.sfx_volume = 0.6,
-	.music_volume = 0.5,
+	.sfx_volume = 0.8,
+	.music_volume = 0.7,
 	.internal_roll = 0.6,
 	.ui_scale = 0,
-	.show_fps = true,
+	.show_fps = false,
 	.fullscreen = true,
 	.screen_res = 0,
 	.post_effect = 0,
@@ -645,13 +645,13 @@ void game_update(void) {
 //		save.is_dirty = true;
 //	}
 
-//	if (save.is_dirty) {
+	if (save.is_dirty) {
 		// FIXME: use a text based format?
 		// FIXME: this should probably run async somewhere
-//		save.is_dirty = false;
-//		platform_store_userdata("save.dat", &save, sizeof(save_t));
+		save.is_dirty = false;
+		platform_store_userdata("save.dat", &save, sizeof(save_t));
 //		printf("wrote save.dat\n");
-//	}
+	}
 
 	float now = platform_now();
 	g.frame_time = now - frame_start_time;

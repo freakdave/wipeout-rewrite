@@ -43,6 +43,9 @@ uint8_t *file_load(const char *path, uint32_t *bytes_read) {
 	return bytes;
 }
 
+
+
+
 uint32_t file_store(const char *path, void *bytes, int32_t len) {
 #if 0
 	FILE *f = fopen(path, "wb");

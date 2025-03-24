@@ -319,7 +319,38 @@ void track_load_sections(char *file_name) {
 #include <kos.h>
 extern pvr_vertex_t __attribute__((aligned(32))) vs[4];
 
+/*
 
+Consider special-casing this.
+
+A few things:
+
+1) it may be possible to pass a flag for the case where
+	we KNOW there won't be any near-z clipping necessary
+	(tbd if we can determine that)
+1a) if we don't need to clip, we can 100% of the time submit as quad
+	without getting into any slow path
+
+2) if we use one of those transform functions that outputs to a separate
+variable, we can possibly fast-path this by passing the faces directly...
+
+
+*/
+#if 0
+#define mat_trans_single3_nodivw_nomod(x, y, z, outw, outx, outy, outz) { \
+        register float __x __asm__("fr12") = (x); \
+        register float __y __asm__("fr13") = (y); \
+        register float __z __asm__("fr14") = (z); \
+        register float __w __asm__("fr15") = 1.0f; \
+        __asm__ __volatile__( \
+                              "ftrv  xmtrx, fv12\n" \
+                              : "=f" (__x), "=f" (__y), "=f" (__z), "=f" (__w) \
+                              : "0" (__x), "1" (__y), "2" (__z), "3" (__w) ); \
+        outx = __x; outy = __y; outz = __z; outw = __w; \
+		}
+
+void render_face_tri(pvr_vertex_t *v, uint16_t tex_index);
+#endif
 void track_draw_section(section_t *section) {
 	track_face_t *face = g.track.faces + section->face_start;
 	int16_t face_count = section->face_count;
@@ -330,9 +361,11 @@ void track_draw_section(section_t *section) {
 		// I don't *like* copying but this is about as good as it gets
 		memcpy(&vs[0], &face->tris[0].vertices[0], 96);
 		render_tri(tex_index);
+		//render_face_tri(&face->tris[0].vertices[0], tex_index);
 
 		memcpy(&vs[0], &face->tris[1].vertices[0], 96);
 		render_tri(tex_index);
+		//render_face_tri(&face->tris[1].vertices[0], tex_index);
 
 		face++;
 	}

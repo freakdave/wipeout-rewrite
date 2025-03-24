@@ -178,18 +178,212 @@ uint8_t *platform_load_asset(const char *name, uint32_t *bytes_read) {
 	return file_load(path, bytes_read);
 }
 
+
+#include <kos.h>
+#include <dc/vmu_fb.h>
+#include <dc/vmu_pkg.h>
+
+#include "vmudata.h"
+
+int32_t ControllerPakStatus = 1;
+int32_t Pak_Memory = 0;
+int32_t Pak_Size = 0;
+uint8_t *Pak_Data;
+dirent_t __attribute__((aligned(32))) FileState[200];
+
+static char full_fn[512];
+
+static char *get_vmu_fn(maple_device_t *vmudev, char *fn) {
+	if (fn)
+		sprintf(full_fn, "/vmu/%c%d/%s", 'a'+vmudev->port, vmudev->unit, fn);
+	else
+		sprintf(full_fn, "/vmu/%c%d", 'a'+vmudev->port, vmudev->unit);
+
+	return full_fn;
+}
+
+int vmu_check(void)
+{
+	maple_device_t *vmudev = NULL;
+
+	ControllerPakStatus = 0;
+
+	vmudev = maple_enum_type(0, MAPLE_FUNC_MEMCARD);
+	if (!vmudev)
+		return -1;
+
+	file_t d;
+	dirent_t *de;
+
+	d = fs_open(get_vmu_fn(vmudev, NULL), O_RDONLY | O_DIR);
+	if(!d)
+		return -2;
+
+	Pak_Memory = 200;
+
+	memset(FileState, 0, sizeof(dirent_t)*200);
+
+	int FileCount = 0;
+	while (NULL != (de = fs_readdir(d))) {
+		if (strcmp(de->name, ".") == 0)
+			continue;
+		if (strcmp(de->name, "..") == 0)
+			continue;
+
+		memcpy(&FileState[FileCount++], de, sizeof(dirent_t));			
+		Pak_Memory -= (de->size / 512);
+	}
+
+	fs_close(d);
+
+	ControllerPakStatus = 1;
+
+	return 0;
+}
+
+static vmu_pkg_t pkg;
+
+#define USERDATA_BLOCK_COUNT 6
+
 uint8_t *platform_load_userdata(const char *name, uint32_t *bytes_read) {
-	char *path = strcat(strcpy(temp_path, path_userdata), name);
-	if (!file_exists(path)) {
+	vmu_check();
+	if (!ControllerPakStatus) {
 		*bytes_read = 0;
 		return NULL;
 	}
-	return file_load(path, bytes_read);
+
+	ssize_t size;
+	maple_device_t *vmudev = NULL;
+	uint8_t *data;
+
+	ControllerPakStatus = 0;
+
+	vmudev = maple_enum_type(0, MAPLE_FUNC_MEMCARD);
+	if (!vmudev) {
+		*bytes_read = 0;
+		return NULL;
+	}
+
+	file_t d = fs_open(get_vmu_fn(vmudev, "wipeout.dat"), O_RDONLY);
+	if (!d) {
+		*bytes_read = 0;
+		return NULL;
+	}
+
+	size = fs_total(d);
+	data = calloc(1, size);
+
+	if (!data) {
+		fs_close(d);
+ 		*bytes_read = 0;
+		return NULL;
+	}
+
+	memset(&pkg, 0, sizeof(pkg));
+	ssize_t res = fs_read(d, data, size);
+
+	if (res < 0) {
+		fs_close(d);
+ 		*bytes_read = 0;
+		return NULL;
+	}
+	ssize_t total = res;
+	while (total < size) {
+		res = fs_read(d, data + total, size - total);
+		if (res < 0) {
+			fs_close(d);
+			*bytes_read = 0;
+			return NULL;
+		}
+		total += res;
+	}
+
+	if (total != size) {
+		fs_close(d);
+ 		*bytes_read = 0;
+		return NULL;
+	}
+
+	fs_close(d);
+
+	if(vmu_pkg_parse(data, &pkg) < 0) {
+		free(data);
+ 		*bytes_read = 0;
+		return NULL;
+	}
+
+	uint8_t *bytes = mem_temp_alloc(pkg.data_len);
+	if (!bytes) {
+		free(data);
+ 		*bytes_read = 0;
+		return NULL;
+	}
+
+	memcpy(bytes, pkg.data, pkg.data_len);
+	ControllerPakStatus = 1;
+	free(data);
+
+	*bytes_read = pkg.data_len;
+	return bytes;
 }
 
 uint32_t platform_store_userdata(const char *name, void *bytes, int32_t len) {
-	char *path = strcat(strcpy(temp_path, path_userdata), name);
-	return file_store(path, bytes, len);
+	uint8 *pkg_out;
+	ssize_t pkg_size;
+	maple_device_t *vmudev = NULL;
+
+	vmu_check();
+	if (!ControllerPakStatus || Pak_Memory < USERDATA_BLOCK_COUNT) {
+		return 0;
+	}
+
+	ControllerPakStatus = 0;
+
+	vmudev = maple_enum_type(0, MAPLE_FUNC_MEMCARD);
+	if (!vmudev)
+		return 0;
+
+	memset(&pkg, 0, sizeof(vmu_pkg_t));
+	strcpy(pkg.desc_short,"Wipeout userdata");
+	strcpy(pkg.desc_long, "Wipeout userdata");
+	strcpy(pkg.app_id, "Wipeout");
+	pkg.icon_cnt = 3;
+	pkg.icon_data = icon1_data;
+	memcpy(pkg.icon_pal, vmu_icon_pal, sizeof(vmu_icon_pal));
+	pkg.data_len = len;
+	pkg.data = bytes;
+
+	file_t d = fs_open(get_vmu_fn(vmudev, "wipeout.dat"), O_RDWR | O_CREAT);
+	if (!d)
+		return 0;
+
+	vmu_pkg_build(&pkg, &pkg_out, &pkg_size);
+	if (!pkg_out || pkg_size <= 0) {
+		fs_close(d);
+		return 0;
+	}
+
+	ssize_t rv = fs_write(d, pkg_out, pkg_size);
+	ssize_t total = rv;
+	while (total < pkg_size) {
+		rv = fs_write(d, pkg_out + total, pkg_size - total);
+		if (rv < 0) {
+			fs_close(d);
+			return -2;
+		}
+		total += rv;
+	}
+
+	fs_close(d);
+
+	free(pkg_out);
+
+	if (total == pkg_size) {
+		ControllerPakStatus = 1;
+		return len;
+	} else {
+	    return 0;
+	}
 }
 
 	#define PLATFORM_WINDOW_FLAGS 0

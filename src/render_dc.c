@@ -171,6 +171,9 @@ void render_init(vec2i_t screen_size) {
 
 	cur_mode = RENDER_STATEMAP(0,1,1,1,0);
 
+	vs[0].flags = PVR_CMD_VERTEX;
+	vs[1].flags = PVR_CMD_VERTEX;
+	vs[2].flags = PVR_CMD_VERTEX_EOL;
 	vs[3].flags = PVR_CMD_VERTEX_EOL;
 
 	for(int i=0;i<4;i++)
@@ -195,7 +198,7 @@ void render_cleanup(void) {
 	// TODO
 }
 
-mat4_t vp_mat;
+mat4_t __attribute__((aligned(32))) vp_mat;
 
 void render_set_screen_size(vec2i_t size) {
 	screen_size = size;
@@ -245,6 +248,10 @@ void render_frame_prepare(void) {
 	pvr_scene_begin();
 	pvr_list_begin(PVR_LIST_TR_POLY);
 	pvr_dr_init(&dr_state);
+	vs[0].flags = PVR_CMD_VERTEX;
+	vs[1].flags = PVR_CMD_VERTEX;
+	vs[2].flags = PVR_CMD_VERTEX_EOL;
+	vs[3].flags = PVR_CMD_VERTEX_EOL;
 }
 
 void render_frame_end(void) {
@@ -413,6 +420,253 @@ void render_noclip_quad(uint16_t texture_index) {
 void render_quad(uint16_t texture_index) {
 
 }
+
+#if 0
+#define mat_trans_single3_nodivw_nomod(x, y, z, outw, outx, outy, outz) { \
+        register float __x __asm__("fr12") = (x); \
+        register float __y __asm__("fr13") = (y); \
+        register float __z __asm__("fr14") = (z); \
+        register float __w __asm__("fr15") = 1.0f; \
+        __asm__ __volatile__( \
+                              "ftrv  xmtrx, fv12\n" \
+                              : "=f" (__x), "=f" (__y), "=f" (__z), "=f" (__w) \
+                              : "0" (__x), "1" (__y), "2" (__z), "3" (__w) ); \
+        outx = __x; outy = __y; outz = __z; outw = __w; \
+		}
+
+void render_face_tri(pvr_vertex_t *v, uint16_t texture_index) {
+	vs[0].flags = PVR_CMD_VERTEX;
+	vs[1].flags = PVR_CMD_VERTEX;
+	vs[2].flags = PVR_CMD_VERTEX_EOL;
+
+	memcpy(&vs[0].u, &v[0].u, 4 * 4);
+	memcpy(&vs[1].u, &v[1].u, 4 * 4);
+	memcpy(&vs[2].u, &v[2].u, 4 * 4);
+
+#define p0 vs[0]
+#define p1 vs[1]
+#define p2 vs[2]
+	render_texture_t *t = &textures[texture_index];
+//	int notex = (texture_index == RENDER_NO_TEXTURE);
+	float w0,w1,w2,w3;
+
+	// don't do anything header-related if we're on the same texture as the last call
+	// automatic saving every time quads are pushed as two tris
+	// and savings in plenty of other cases
+	if (last_index != texture_index) {
+		last_index = texture_index;
+
+		if (cur_mode != last_mode[texture_index]) {
+			if (texture_index < 1024) {
+				update_header(texture_index, p0.oargb);
+			}
+		}
+//		if(__builtin_expect(notex,0)) {
+//			pvr_prim(&chdr_notex, sizeof(pvr_poly_hdr_t));
+//		} else {
+			pvr_prim(chdr[texture_index], sizeof(pvr_poly_hdr_t));
+//		}
+	}
+
+//	if (!notex) {
+		float up2,vp2;
+
+		up2 = approx_recip((float)t->offset.x);
+		vp2 = approx_recip((float)t->offset.y);
+
+		p0.u *= up2;
+		p1.u *= up2;
+		p2.u *= up2;
+
+		p0.v *= vp2;
+		p1.v *= vp2;
+		p2.v *= vp2;
+//	}
+
+	mat_trans_single3_nodivw_nomod(v[0].x, v[0].y, v[0].z, w0, p0.x,p0.y,p0.z);
+	mat_trans_single3_nodivw_nomod(v[1].x, v[1].y, v[1].z, w1, p1.x,p1.y,p1.z);
+	mat_trans_single3_nodivw_nomod(v[2].x, v[2].y, v[2].z, w2, p2.x,p2.y,p2.z);
+#define x0 p0.x
+#define y0 p0.y
+#define z0 p0.z
+#define u0 p0.u
+#define v0 p0.v
+#define __w0 w0
+
+#define x1 p1.x
+#define y1 p1.y
+#define z1 p1.z
+#define u1 p1.u
+#define v1 p1.v
+#define __w1 w1
+
+#define x2 p2.x
+#define y2 p2.y
+#define z2 p2.z
+#define u2 p2.u
+#define v2 p2.v
+#define __w2 w2
+	uint32_t vismask = (z0 > -__w0) | ((z1 > -__w1) << 1) | ((z2 > -__w2) << 2);
+
+	int usespare = 0;
+	if (vismask == 0) {
+		return;
+	} else if (vismask == 7) {
+		goto sendit;
+	} else {
+		switch (vismask)
+		{
+		case 1:
+			nearz_clip(x0, y0, z0, __w0, u0, v0, x1, y1, z1, __w1, u1, v1);
+
+			x1 = xout;
+			y1 = yout;
+			z1 = zout;
+			__w1 = wout;
+			u1 = uout;
+			v1 = vout;
+
+			nearz_clip(x0, y0, z0, __w0, u0, v0, x2, y2, z2, __w2, u2, v2);
+
+			x2 = xout;
+			y2 = yout;
+			z2 = zout;
+			__w2 = wout;
+			u2 = uout;
+			v2 = vout;
+
+			break;
+		case 2:
+			nearz_clip(x0, y0, z0, __w0, u0, v0, x1, y1, z1, __w1, u1, v1);
+			x0 = xout;
+			y0 = yout;
+			z0 = zout;
+			__w0 = wout;
+			u0 = uout;
+			v0 = vout;
+			nearz_clip(x1, y1, z1, __w1, u1, v1, x2, y2, z2, __w2, u2, v2);
+			x2 = xout;
+			y2 = yout;
+			z2 = zout;
+			__w2 = wout;
+			u2 = uout;
+			v2 = vout;
+			break;
+		case 3:
+			usespare = 1;
+			nearz_clip(x1, y1, z1, __w1, u1, v1, x2, y2, z2, __w2, u2, v2);
+			vs[3].x = xout;
+			vs[3].y = yout;
+			vs[3].z = zout;
+			w3 = wout;
+			vs[3].u = uout;
+			vs[3].v = vout;
+			vs[3].argb = p1.argb;
+			vs[3].oargb = p1.oargb;
+			nearz_clip(x0, y0, z0, __w0, u0, v0, x2, y2, z2, __w2, u2, v2);
+			x2 = xout;
+			y2 = yout;
+			z2 = zout;
+			__w2 = wout;
+			u2 = uout;
+			v2 = vout;
+			break;
+		case 4:
+			nearz_clip(x0, y0, z0, __w0, u0, v0, x2, y2, z2, __w2, u2, v2);
+			x0 = xout;
+			y0 = yout;
+			z0 = zout;
+			__w0 = wout;
+			u0 = uout;
+			v0 = vout;
+			nearz_clip(x1, y1, z1, __w1, u1, v1, x2, y2, z2, __w2, u2, v2);
+			x1 = xout;
+			y1 = yout;
+			z1 = zout;
+			__w1 = wout;
+			u1 = uout;
+			v1 = vout;			
+			break;
+		case 5:
+			usespare = 1;
+			nearz_clip(x1, y1, z1, __w1, u1, v1, x2, y2, z2, __w2, u2, v2);
+			vs[3].x = xout;
+			vs[3].y = yout;
+			vs[3].z = zout;
+			w3 = wout;
+			vs[3].u = uout;
+			vs[3].v = vout;
+			vs[3].argb = p1.argb;
+			vs[3].oargb = p1.oargb;
+			nearz_clip(x0, y0, z0, __w0, u0, v0, x1, y1, z1, __w1, u1, v1);
+			x1 = xout;
+			y1 = yout;
+			z1 = zout;
+			__w1 = wout;
+			u1 = uout;
+			v1 = vout;			
+			break;
+		case 6:
+			usespare = 1;
+			vs[3].x = x2;
+			vs[3].y = y2;
+			vs[3].z = z2;
+			w3 = __w2;
+			vs[3].u = u2;
+			vs[3].v = v2;
+			vs[3].argb = p2.argb;
+			vs[3].oargb = p2.oargb;
+			nearz_clip(x0, y0, z0, __w0, u0, v0, x2, y2, z2, __w2, u2, v2);
+			x2 = xout;
+			y2 = yout;
+			z2 = zout;
+			__w2 = wout;
+			u2 = uout;
+			v2 = vout;
+			nearz_clip(x0, y0, z0, __w0, u0, v0, x1, y1, z1, __w1, u1, v1);
+			x0 = xout;
+			y0 = yout;
+			z0 = zout;
+			__w0 = wout;
+			u0 = uout;
+			v0 = vout;
+			break;
+		}
+	}
+#undef x0
+#undef y0
+#undef z0
+#undef u0
+#undef v0
+#undef __w0
+#undef x1
+#undef y1
+#undef z1
+#undef u1
+#undef v1
+#undef __w1
+#undef x2
+#undef y2
+#undef z2
+#undef u2
+#undef v2
+#undef __w2
+sendit:
+	perspdiv(&p0.x, &p0.y, &p0.z, w0);
+	perspdiv(&p1.x, &p1.y, &p1.z, w1);
+	perspdiv(&p2.x, &p2.y, &p2.z, w2);
+	if (usespare) {
+		vs[2].flags = PVR_CMD_VERTEX;
+		perspdiv(&vs[3].x, &vs[3].y, &vs[3].z, w3);
+		pvr_prim(vs, 4 * 32);
+	} else {
+		pvr_prim(vs, 3 * 32);
+	}
+#undef p2
+#undef p1
+#undef p0
+}
+#endif
 
 void render_tri(uint16_t texture_index) {
 #define p0 vs[0]

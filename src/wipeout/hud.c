@@ -212,7 +212,7 @@ void hud_draw(ship_t *ship) {
 	}
 
 	// Framerate
-	if (1) { //save.show_fps) {
+	if (save.show_fps) {
 //	    pvr_stats_t stats;
 //		pvr_get_stats(&stats);
 		ui_draw_text("FPS", ui_scaled(vec2i(16, 78)), UI_SIZE_8, UI_COLOR_ACCENT);

@@ -479,7 +479,7 @@ void object_draw(Object *object, mat4_t *mat) {
 			coord1 = poly.gt3->coords[1];
 			coord2 = poly.gt3->coords[2];
 
-			vs[0].flags = PVR_CMD_VERTEX;
+//			vs[0].flags = PVR_CMD_VERTEX;
 			vs[0].x = (float)vertex[coord0].x;
 			vs[0].y = (float)vertex[coord0].y;
 			vs[0].z = (float)vertex[coord0].z;
@@ -488,7 +488,7 @@ void object_draw(Object *object, mat4_t *mat) {
 			vs[0].argb = color_to_pvr(poly.gt3->color[0]);
 			vs[0].oargb = (poly.gt3->pad1 ? color_to_pvr(poly.gt3->color[0]) : 0);
 
-			vs[1].flags = PVR_CMD_VERTEX;
+//			vs[1].flags = PVR_CMD_VERTEX;
 			vs[1].x = (float)vertex[coord1].x;
 			vs[1].y = (float)vertex[coord1].y;
 			vs[1].z = (float)vertex[coord1].z;
@@ -517,7 +517,7 @@ void object_draw(Object *object, mat4_t *mat) {
 			coord2 = poly.gt4->coords[2];
 			coord3 = poly.gt4->coords[3];
 
-			vs[0].flags = PVR_CMD_VERTEX;
+//			vs[0].flags = PVR_CMD_VERTEX;
 			vs[0].x = (float)vertex[coord0].x;
 			vs[0].y = (float)vertex[coord0].y;
 			vs[0].z = (float)vertex[coord0].z;
@@ -526,7 +526,7 @@ void object_draw(Object *object, mat4_t *mat) {
 			vs[0].argb = color_to_pvr(poly.gt4->color[0]);
 			vs[0].oargb = 1;
 
-			vs[1].flags = PVR_CMD_VERTEX;
+//			vs[1].flags = PVR_CMD_VERTEX;
 			vs[1].x = (float)vertex[coord1].x;
 			vs[1].y = (float)vertex[coord1].y;
 			vs[1].z = (float)vertex[coord1].z;
@@ -586,7 +586,7 @@ void object_draw(Object *object, mat4_t *mat) {
 			coord1 = poly.ft3->coords[1];
 			coord2 = poly.ft3->coords[2];
 
-			vs[0].flags = PVR_CMD_VERTEX;
+//			vs[0].flags = PVR_CMD_VERTEX;
 			vs[0].x = (float)vertex[coord0].x;
 			vs[0].y = (float)vertex[coord0].y;
 			vs[0].z = (float)vertex[coord0].z;
@@ -595,7 +595,7 @@ void object_draw(Object *object, mat4_t *mat) {
 			vs[0].argb = argb;
 			vs[0].oargb = oargb;
 
-			vs[1].flags = PVR_CMD_VERTEX;
+//			vs[1].flags = PVR_CMD_VERTEX;
 			vs[1].x = (float)vertex[coord1].x;
 			vs[1].y = (float)vertex[coord1].y;
 			vs[1].z = (float)vertex[coord1].z;
@@ -625,7 +625,7 @@ void object_draw(Object *object, mat4_t *mat) {
 			coord2 = poly.ft4->coords[2];
 			coord3 = poly.ft4->coords[3];
 
-			vs[0].flags = PVR_CMD_VERTEX;
+//			vs[0].flags = PVR_CMD_VERTEX;
 			vs[0].x = (float)vertex[coord0].x;
 			vs[0].y = (float)vertex[coord0].y;
 			vs[0].z = (float)vertex[coord0].z;
@@ -634,7 +634,7 @@ void object_draw(Object *object, mat4_t *mat) {
 			vs[0].argb = argb;
 			vs[0].oargb = 0;
 
-			vs[1].flags = PVR_CMD_VERTEX;
+//			vs[1].flags = PVR_CMD_VERTEX;
 			vs[1].x = (float)vertex[coord1].x;
 			vs[1].y = (float)vertex[coord1].y;
 			vs[1].z = (float)vertex[coord1].z;
@@ -691,14 +691,14 @@ void object_draw(Object *object, mat4_t *mat) {
 			coord1 = poly.g3->coords[1];
 			coord2 = poly.g3->coords[2];
 
-			vs[0].flags = PVR_CMD_VERTEX;
+//			vs[0].flags = PVR_CMD_VERTEX;
 			vs[0].x = (float)vertex[coord0].x;
 			vs[0].y = (float)vertex[coord0].y;
 			vs[0].z = (float)vertex[coord0].z;
 			vs[0].argb = color_to_pvr(poly.g3->color[0]);
 			vs[0].oargb = 1;
 
-			vs[1].flags = PVR_CMD_VERTEX;
+//			vs[1].flags = PVR_CMD_VERTEX;
 			vs[1].x = (float)vertex[coord1].x;
 			vs[1].y = (float)vertex[coord1].y;
 			vs[1].z = (float)vertex[coord1].z;
@@ -723,14 +723,14 @@ void object_draw(Object *object, mat4_t *mat) {
 			coord2 = poly.g4->coords[2];
 			coord3 = poly.g4->coords[3];
 
-			vs[0].flags = PVR_CMD_VERTEX;
+//			vs[0].flags = PVR_CMD_VERTEX;
 			vs[0].x = (float)vertex[coord0].x;
 			vs[0].y = (float)vertex[coord0].y;
 			vs[0].z = (float)vertex[coord0].z;
 			vs[0].argb = color_to_pvr(poly.g4->color[0]);
 			vs[0].oargb = 1;
 
-			vs[1].flags = PVR_CMD_VERTEX;
+//			vs[1].flags = PVR_CMD_VERTEX;
 			vs[1].x = (float)vertex[coord1].x;
 			vs[1].y = (float)vertex[coord1].y;
 			vs[1].z = (float)vertex[coord1].z;
@@ -779,14 +779,14 @@ void object_draw(Object *object, mat4_t *mat) {
 			coord1 = poly.f3->coords[1];
 			coord2 = poly.f3->coords[2];
 
-			vs[0].flags = PVR_CMD_VERTEX;
+//			vs[0].flags = PVR_CMD_VERTEX;
 			vs[0].x = (float)vertex[coord0].x;
 			vs[0].y = (float)vertex[coord0].y;
 			vs[0].z = (float)vertex[coord0].z;
 			vs[0].argb = argb;
 			vs[0].oargb = 0;
 
-			vs[1].flags = PVR_CMD_VERTEX;
+//			vs[1].flags = PVR_CMD_VERTEX;
 			vs[1].x = (float)vertex[coord1].x;
 			vs[1].y = (float)vertex[coord1].y;
 			vs[1].z = (float)vertex[coord1].z;
@@ -813,14 +813,14 @@ void object_draw(Object *object, mat4_t *mat) {
 			coord2 = poly.f4->coords[2];
 			coord3 = poly.f4->coords[3];
 
-			vs[0].flags = PVR_CMD_VERTEX;
+//			vs[0].flags = PVR_CMD_VERTEX;
 			vs[0].x = (float)vertex[coord0].x;
 			vs[0].y = (float)vertex[coord0].y;
 			vs[0].z = (float)vertex[coord0].z;
 			vs[0].argb = argb;
 			vs[0].oargb = 0;
 
-			vs[1].flags = PVR_CMD_VERTEX;
+//			vs[1].flags = PVR_CMD_VERTEX;
 			vs[1].x = (float)vertex[coord1].x;
 			vs[1].y = (float)vertex[coord1].y;
 			vs[1].z = (float)vertex[coord1].z;

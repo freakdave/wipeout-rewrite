@@ -326,6 +326,7 @@ static void toggle_music_volume(menu_t *menu, int data) {
 	save.music_volume = (float)data * 0.1;
 	save.is_dirty = true;
 	wav_volume(255 * save.music_volume);
+	printf("%d\n", sizeof(save_t));
 }
 
 static void toggle_sfx_volume(menu_t *menu, int data) {
