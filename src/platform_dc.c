@@ -183,7 +183,7 @@ uint8_t *platform_load_asset(const char *name, uint32_t *bytes_read) {
 #include <kos.h>
 #include <dc/vmu_fb.h>
 #include <dc/vmu_pkg.h>
-
+#if 0
 #include "vmudata.h"
 
 int32_t ControllerPakStatus = 1;
@@ -277,14 +277,14 @@ void vmu_icon(void) {
 //		vmufb_present(&vmubuf, vmudev);
 //	vmu_set_icon(owl_data);	
 }
-
+#endif
 uint8_t *platform_load_userdata(const char *name, uint32_t *bytes_read) {
-	vmu_check();
-	if (!ControllerPakStatus) {
+//	vmu_check();
+//	if (!ControllerPakStatus) {
 		*bytes_read = 0;
 		return NULL;
-	}
-
+//	}
+/*
 	ssize_t size;
 	maple_device_t *vmudev = NULL;
 	uint8_t *data;
@@ -357,18 +357,18 @@ uint8_t *platform_load_userdata(const char *name, uint32_t *bytes_read) {
 	free(data);
 
 	*bytes_read = pkg.data_len;
-	return bytes;
+	return bytes;*/
 }
 
 uint32_t platform_store_userdata(const char *name, void *bytes, int32_t len) {
-	uint8 *pkg_out;
+/*	uint8 *pkg_out;
 	ssize_t pkg_size;
 	maple_device_t *vmudev = NULL;
 
 	vmu_check();
-	if (!ControllerPakStatus || Pak_Memory < USERDATA_BLOCK_COUNT) {
+	if (!ControllerPakStatus) {*/
 		return 0;
-	}
+/*	}
 
 	ControllerPakStatus = 0;
 
@@ -386,9 +386,19 @@ uint32_t platform_store_userdata(const char *name, void *bytes, int32_t len) {
 	pkg.data_len = len;
 	pkg.data = bytes;
 
-	file_t d = fs_open(get_vmu_fn(vmudev, "wipeout.dat"), O_RDWR | O_CREAT);
-	if (!d)
-		return 0;
+	file_t d = fs_open(get_vmu_fn(vmudev, "wipeout.dat"), O_RDONLY);
+	if (!d) {
+		if (Pak_Memory < USERDATA_BLOCK_COUNT)
+			return 0;
+		d = fs_open(get_vmu_fn(vmudev, "wipeout.dat"), O_RDWR | O_CREAT);
+		if (!d)
+			return 0;
+	} else {
+		fs_close(d);
+		d = fs_open(get_vmu_fn(vmudev, "wipeout.dat"), O_WRONLY);
+		if (!d)
+			return 0;
+	}
 
 	vmu_pkg_build(&pkg, &pkg_out, &pkg_size);
 	if (!pkg_out || pkg_size <= 0) {
@@ -416,7 +426,7 @@ uint32_t platform_store_userdata(const char *name, void *bytes, int32_t len) {
 		return len;
 	} else {
 	    return 0;
-	}
+	}*/
 }
 
 	#define PLATFORM_WINDOW_FLAGS 0
@@ -479,7 +489,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	wav_init();
-	vmu_icon();
+//	vmu_icon();
 
 	// Reserve some space for concatenating the asset and userdata paths with
 	// local filenames.
