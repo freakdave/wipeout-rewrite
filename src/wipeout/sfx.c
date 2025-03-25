@@ -395,7 +395,7 @@ void *song_worker(void *arg) {
 		// while the song shouldn't be done playing yet
 		// do a timed wait for a full second
 		mutex_lock(&song_mtx);
-		int rv = cond_wait_timed(&song_cv, &song_mtx, ((duration * 1000)/20) + 50);
+		int rv = cond_wait_timed(&song_cv, &song_mtx, (duration * 1000) + 50);
 		mutex_unlock(&song_mtx);
 
 //		printf("%d %s\n", rv, strerror(errno));
