@@ -381,7 +381,7 @@ uint32_t platform_store_userdata(const char *name, void *bytes, int32_t len) {
 
 #include <kos.h>
 
-extern int wav_init(void);
+
 int main(int argc, char *argv[]) {
 	// Figure out the absolute asset and userdata paths. These may either be
 	// supplied at build time through -DPATH_ASSETS=.. and -DPATH_USERDATA=..
@@ -406,7 +406,6 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	wav_init();
 	draw_vmu_icon();
 
 	// Reserve some space for concatenating the asset and userdata paths with

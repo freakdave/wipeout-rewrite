@@ -14,9 +14,11 @@ typedef struct {
 	uint32_t len;
 } sfx_data_t;
 
-uint32_t music_track_index;
+volatile uint32_t music_track_index;
 sfx_music_mode_t music_mode;
 
+mutex_t song_mtx;
+condvar_t song_cv;
 
 enum {
 	VAG_REGION_START = 1,
@@ -40,9 +42,11 @@ static sfx_t *nodes;
 
 sfxhnd_t handles[64];
 
+void *song_worker(void *arg);
+
 void sfx_load(void) {
 	music_mode = SFX_MUSIC_RANDOM;
-	music_track_index = -1;
+	music_track_index = 0xffffffff;
 
 	// Load SFX samples
 	nodes = mem_bump(SFX_MAX * sizeof(sfx_t));
@@ -51,6 +55,11 @@ void sfx_load(void) {
 		nodes->chn = -1;//snd_sfx_chn_alloc();
 		nodes->data.chn = nodes->chn;
 	}
+
+	mutex_init(&song_mtx, MUTEX_TYPE_NORMAL);
+	cond_init(&song_cv);
+
+	thd_create(1, song_worker, NULL);
 
 	// 16 byte blocks: 2 byte header, 14 bytes with 2x4bit samples each
 	uint32_t vb_size;
@@ -278,13 +287,8 @@ extern char *temp_path;
 extern char *path_userdata;
 extern char *path_assets;
 
-int cur_hnd = SND_STREAM_INVALID;
+volatile int cur_hnd = SND_STREAM_INVALID;
 void sfx_music_open(char *path) {
-	if (cur_hnd != SND_STREAM_INVALID) {
-		wav_destroy();
- 		cur_hnd = SND_STREAM_INVALID;
- 	}
-
     char *newpath = strcat(strcpy(temp_path, path_assets), path);
 
 	cur_hnd = wav_create(newpath, 1);
@@ -296,6 +300,7 @@ void sfx_music_open(char *path) {
 	return;
 }
 
+#if 0
 void sfx_music_done_callback(void) {
 	
 	if (music_mode == SFX_MUSIC_RANDOM) {
@@ -311,9 +316,29 @@ void sfx_music_done_callback(void) {
 		sfx_music_play(music_track_index);
 	}
 }
+#endif
+
+/*
+
+music player mechanism
+
+main thread starts a song 
+
+the song needs to play for a known duration plus some wiggle room
+
+if nothing else happens, when the duration is elapsed, a signal is sent to something that starts the next song
 
 
-static int runtimes[11] = {
+
+
+
+
+
+
+
+
+*/
+static uint32_t runtimes[11] = {
 315,
 323,
 306,
@@ -327,13 +352,91 @@ static int runtimes[11] = {
 375	
 };
 
+
+#include <errno.h>
+
+extern int wav_init(void);
+
+void *song_worker(void *arg) {
+	int song_interrupted = 0;
+
+	uint32_t ran = 0;
+
+	wav_init();
+
+	while (1) {
+		if (!ran) {
+			// wait to get first signal that says "OK, LETS PLAY A NEW SONG"
+			mutex_lock(&song_mtx);
+			cond_wait(&song_cv, &song_mtx);
+			mutex_unlock(&song_mtx);
+		
+			ran = 1;
+		}
+
+		// if a song ever played before, kill it
+		if (cur_hnd != SND_STREAM_INVALID) {
+			wav_destroy();
+			cur_hnd = SND_STREAM_INVALID;
+		}
+
+		// now, we need to fire off the new song
+
+		// this does wav_create under the hood (in looping mode)
+		sfx_music_open(def.music[music_track_index].path);
+		// and then actually play it
+		wav_play();
+
+		int duration = runtimes[music_track_index];
+
+		// always start by assuming that the song will complete uninterrupted
+		song_interrupted = 0;
+
+		// while the song shouldn't be done playing yet
+		// do a timed wait for a full second
+		mutex_lock(&song_mtx);
+		int rv = cond_wait_timed(&song_cv, &song_mtx, ((duration * 1000)/20) + 50);
+		mutex_unlock(&song_mtx);
+
+//		printf("%d %s\n", rv, strerror(errno));
+		// if rv != 0, we timed out, we don't have to update anything
+
+		if (0 == rv) {
+			// if we were explicitly interrupted, someone called `sfx_music_play`
+			// so clear this flag to indicate to the next iteration of the loop
+			// to not wait again
+			song_interrupted = 1;
+		}
+
+		thd_pass();
+
+		// if we made it to the end of the song without being interrupted,
+		// do the music logic from the original mixer code
+		if (!song_interrupted) {
+			if (music_mode == SFX_MUSIC_RANDOM) {
+				music_track_index = rand_int(0, len(def.music));
+			}
+			else if (music_mode == SFX_MUSIC_SEQUENTIAL) {
+				music_track_index = (music_track_index + 1) % len(def.music);
+			}
+			/*else if (music_mode == SFX_MUSIC_LOOP) {
+
+			}*/
+		}
+
+		thd_pass();		
+	}
+
+	return NULL;
+}
+
 void sfx_music_play(uint32_t index) {
 	error_if(index >= len(def.music), "Invalid music index");
-
 	music_track_index = index;
-	sfx_music_open(def.music[index].path);
 
-	wav_play();
+	mutex_lock(&song_mtx);
+	cond_signal(&song_cv);
+	mutex_unlock(&song_mtx);
 }
 
 void sfx_music_mode(sfx_music_mode_t mode) {
