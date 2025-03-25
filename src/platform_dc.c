@@ -299,6 +299,7 @@ uint32_t platform_store_userdata(const char *name, void *bytes, int32_t len) {
 	strcpy(pkg.app_id, "Wipeout");
 	pkg.icon_cnt = 3;
 	pkg.icon_data = icon1_data;
+	pkg.icon_anim_speed = 4;
 	memcpy(pkg.icon_pal, vmu_icon_pal, sizeof(vmu_icon_pal));
 	pkg.data_len = len;
 	pkg.data = bytes;
