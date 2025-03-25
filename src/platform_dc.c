@@ -16,7 +16,7 @@ char *path_assets = "";
 char *path_userdata = "";
 char *temp_path = NULL;
 
-void vmu_icon(void);
+void draw_vmu_icon(void);
 
 void platform_exit(void) {
 	wants_to_exit = true;
@@ -183,108 +183,22 @@ uint8_t *platform_load_asset(const char *name, uint32_t *bytes_read) {
 #include <kos.h>
 #include <dc/vmu_fb.h>
 #include <dc/vmu_pkg.h>
-#if 0
-#include "vmudata.h"
 
-int32_t ControllerPakStatus = 1;
-int32_t Pak_Memory = 0;
-int32_t Pak_Size = 0;
-uint8_t *Pak_Data;
-dirent_t __attribute__((aligned(32))) FileState[200];
+char *get_vmu_fn(maple_device_t *vmudev, char *fn);
+int vmu_check(void);
+extern int32_t ControllerPakStatus;
+extern int32_t Pak_Memory;
+extern const unsigned short vmu_icon_pal[16];
+extern const uint8_t icon1_data[512*3];
 
-static char full_fn[512];
 
-static char *get_vmu_fn(maple_device_t *vmudev, char *fn) {
-	if (fn)
-		sprintf(full_fn, "/vmu/%c%d/%s", 'a'+vmudev->port, vmudev->unit, fn);
-	else
-		sprintf(full_fn, "/vmu/%c%d", 'a'+vmudev->port, vmudev->unit);
-
-	return full_fn;
-}
-
-int vmu_check(void)
-{
-	maple_device_t *vmudev = NULL;
-
-	ControllerPakStatus = 0;
-
-	vmudev = maple_enum_type(0, MAPLE_FUNC_MEMCARD);
-	if (!vmudev)
-		return -1;
-
-	file_t d;
-	dirent_t *de;
-
-	d = fs_open(get_vmu_fn(vmudev, NULL), O_RDONLY | O_DIR);
-	if(!d)
-		return -2;
-
-	Pak_Memory = 200;
-
-	memset(FileState, 0, sizeof(dirent_t)*200);
-
-	int FileCount = 0;
-	while (NULL != (de = fs_readdir(d))) {
-		if (strcmp(de->name, ".") == 0)
-			continue;
-		if (strcmp(de->name, "..") == 0)
-			continue;
-
-		memcpy(&FileState[FileCount++], de, sizeof(dirent_t));			
-		Pak_Memory -= (de->size / 512);
-	}
-
-	fs_close(d);
-
-	ControllerPakStatus = 1;
-
-	return 0;
-}
-
-static vmu_pkg_t pkg;
-
-#define USERDATA_BLOCK_COUNT 6
-#include "owl.h"
-
-unsigned char tmp[6 * 32];
-
-void fix_xbm(unsigned char *p)
-{
-	for (int i = 31; i > -1; i--) {
-		memcpy(&tmp[(31 - i) * 6], &p[i * 6], 6);
-	}
-
-	memcpy(p, tmp, 6 * 32);
-
-	for (int j = 0; j < 32; j++) {
-		for (int i = 0; i < 6; i++) {
-			uint8_t tmpb = p[(j * 6) + (5 - i)];
-			tmp[(j * 6) + i] = tmpb;
-		}
-	}
-
-	memcpy(p, tmp, 6 * 32);
-}
-
-void vmu_icon(void) {
-	maple_device_t *vmudev = NULL;
-
-	fix_xbm(owl2_bits);
-
-	if ((vmudev = maple_enum_type(0, MAPLE_FUNC_LCD)))
-		vmu_draw_lcd(vmudev, owl2_bits);
-//		vmufb_present(&vmubuf, vmudev);
-//	vmu_set_icon(owl_data);	
-}
-#endif
 uint8_t *platform_load_userdata(const char *name, uint32_t *bytes_read) {
 //	vmu_check();
 //	if (!ControllerPakStatus) {
-		*bytes_read = 0;
-		return NULL;
+//		*bytes_read = 0;
+//		return NULL;
 //	}
-/*
+
 	ssize_t size;
 	maple_device_t *vmudev = NULL;
 	uint8_t *data;
@@ -312,6 +226,7 @@ uint8_t *platform_load_userdata(const char *name, uint32_t *bytes_read) {
 		return NULL;
 	}
 
+	vmu_pkg_t pkg;
 	memset(&pkg, 0, sizeof(pkg));
 	ssize_t res = fs_read(d, data, size);
 
@@ -357,18 +272,19 @@ uint8_t *platform_load_userdata(const char *name, uint32_t *bytes_read) {
 	free(data);
 
 	*bytes_read = pkg.data_len;
-	return bytes;*/
+	return bytes;
 }
+#define USERDATA_BLOCK_COUNT 6
 
 uint32_t platform_store_userdata(const char *name, void *bytes, int32_t len) {
-/*	uint8 *pkg_out;
+	uint8 *pkg_out;
 	ssize_t pkg_size;
 	maple_device_t *vmudev = NULL;
 
 	vmu_check();
-	if (!ControllerPakStatus) {*/
+	if (!ControllerPakStatus) {
 		return 0;
-/*	}
+	}
 
 	ControllerPakStatus = 0;
 
@@ -376,6 +292,7 @@ uint32_t platform_store_userdata(const char *name, void *bytes, int32_t len) {
 	if (!vmudev)
 		return 0;
 
+	vmu_pkg_t pkg;
 	memset(&pkg, 0, sizeof(vmu_pkg_t));
 	strcpy(pkg.desc_short,"Wipeout userdata");
 	strcpy(pkg.desc_long, "Wipeout userdata");
@@ -426,7 +343,7 @@ uint32_t platform_store_userdata(const char *name, void *bytes, int32_t len) {
 		return len;
 	} else {
 	    return 0;
-	}*/
+	}
 }
 
 	#define PLATFORM_WINDOW_FLAGS 0
@@ -489,7 +406,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	wav_init();
-//	vmu_icon();
+	draw_vmu_icon();
 
 	// Reserve some space for concatenating the asset and userdata paths with
 	// local filenames.

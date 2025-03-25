@@ -2,7 +2,6 @@
 TARGET_STRING := wipeout-rewrite.elf
 TARGET := $(TARGET_STRING)
 
-# Preprocessor definitions
 SRC_DIRS :=
 
 # Whether to hide commands or not
@@ -27,7 +26,7 @@ SRC_DIRS += src/wipeout
 C_FILES := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
 
 # Object files
-O_FILES := src/sndwav.o src/input.o src/mem.o src/platform_dc.o src/render_dc.o src/system.o src/types_dc.o src/utils.o src/wipeout/camera.o src/wipeout/droid.o src/wipeout/game.o src/wipeout/hud.o src/wipeout/image.o src/wipeout/ingame_menus.o src/wipeout/intro.o src/wipeout/main_menu.o src/wipeout/menu.o src/wipeout/object.o src/wipeout/particle.o src/wipeout/race.o src/wipeout/scene.o src/wipeout/sfx.o src/wipeout/ship_ai.o src/wipeout/ship.o src/wipeout/ship_player.o src/wipeout/title.o src/wipeout/track.o src/wipeout/ui.o src/wipeout/weapon.o
+O_FILES := src/input.o src/mem.o src/platform_dc.o src/render_dc.o src/system.o src/types_dc.o src/utils.o src/wipeout/camera.o src/wipeout/droid.o src/wipeout/game.o src/wipeout/hud.o src/wipeout/image.o src/wipeout/ingame_menus.o src/wipeout/intro.o src/wipeout/main_menu.o src/wipeout/menu.o src/wipeout/object.o src/wipeout/particle.o src/wipeout/race.o src/wipeout/scene.o src/wipeout/sfx.o src/wipeout/ship_ai.o src/wipeout/ship.o src/wipeout/ship_player.o src/wipeout/title.o src/wipeout/track.o src/wipeout/ui.o src/wipeout/weapon.o src/sndwav.o src/vmu.o
 
 # tools
 PRINT = printf
@@ -57,8 +56,6 @@ buildtarget:
 
 $(TARGET): $(O_FILES) | buildtarget
 	kos-cc -o ${BUILD_DIR}/$@ $(O_FILES)
-
-# array_fast_copy.o
 
 clean:
 	$(RM) wipeout-rewrite.cdi $(O_FILES) $(BUILD_DIR)/$(TARGET)
