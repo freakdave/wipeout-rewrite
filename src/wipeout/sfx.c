@@ -284,7 +284,7 @@ void sfx_music_open(char *path) {
  		cur_hnd = SND_STREAM_INVALID;
  	}
 
-        char *newpath = strcat(strcpy(temp_path, path_assets), path);
+    char *newpath = strcat(strcpy(temp_path, path_assets), path);
 
 	cur_hnd = wav_create(newpath, 0);
 
@@ -311,15 +311,55 @@ void sfx_music_done_callback(void) {
 	}
 }
 
+#include <kos/thread.h>
+#include <kos/worker_thread.h>
+
+kthread_t *next_music_thread;
+kthread_attr_t next_music_attr;
+
+void *next_music_waiter(void *arg) {
+	uint32_t millis = ((uint32_t)arg * 1000) + 1000;
+	thd_sleep(millis);
+	sfx_music_done_callback();
+	return NULL;
+}
+
+static int runtimes[11] = {
+315,
+323,
+306,
+316,
+316,
+318,
+326,
+307,
+386,
+292,
+375	
+};
 
 void sfx_music_play(uint32_t index) {
 	error_if(index >= len(def.music), "Invalid music index");
+
+	wav_stop();
+
+	for(int i=0;i<100;i++) {
+		;		
+	}
 
 	music_track_index = index;
 	sfx_music_open(def.music[index].path);
 
 	// NULL callback should prevent the music crashes for now
 	wav_play(NULL/* sfx_music_done_callback */);
+
+	next_music_attr.create_detached = 1;
+	next_music_attr.stack_size = 4096;
+	next_music_attr.stack_ptr = NULL;
+	next_music_attr.prio = 10;
+	next_music_attr.label = "NextSong";
+
+	next_music_thread = thd_create_ex(&next_music_attr, next_music_waiter, (void*)runtimes[music_track_index]);
 }
 
 void sfx_music_mode(sfx_music_mode_t mode) {
