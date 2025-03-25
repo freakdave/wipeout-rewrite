@@ -297,8 +297,8 @@ static void toggle_post(menu_t *menu, int data) {
 static const char *opts_off_on[] = {"OFF", "ON"};
 static const char *opts_roll[] = {"0", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100"};
 static const char *opts_ui_sizes[] = {"AUTO", "1X", "2X", "3X", "4X"};
-static const char *opts_res[] = {"NATIVE", "240P", "480P"};
-static const char *opts_post[] = {"NONE", "CRT EFFECT"};
+//static const char *opts_res[] = {"NATIVE", "240P", "480P"};
+//static const char *opts_post[] = {"NONE", "CRT EFFECT"};
 
 static void page_options_video_init(menu_t *menu) {
 	menu_page_t *page = menu_push(menu, "VIDEO OPTIONS", NULL);
@@ -309,14 +309,14 @@ static void page_options_video_init(menu_t *menu) {
 	page->block_width = 320;
 	page->items_anchor = UI_POS_MIDDLE | UI_POS_CENTER;
 
-	#ifndef __EMSCRIPTEN__
-		menu_page_add_toggle(page, save.fullscreen, "FULLSCREEN", opts_off_on, len(opts_off_on), toggle_fullscreen);
-	#endif
+//	#ifndef __EMSCRIPTEN__
+//		menu_page_add_toggle(page, save.fullscreen, "FULLSCREEN", opts_off_on, len(opts_off_on), toggle_fullscreen);
+	//#endif
 	menu_page_add_toggle(page, save.internal_roll * 10, "INTERNAL VIEW ROLL", opts_roll, len(opts_roll), toggle_internal_roll);
 	menu_page_add_toggle(page, save.ui_scale, "UI SCALE", opts_ui_sizes, len(opts_ui_sizes), toggle_ui_scale);
 	menu_page_add_toggle(page, save.show_fps, "SHOW FPS", opts_off_on, len(opts_off_on), toggle_show_fps);
-	menu_page_add_toggle(page, save.screen_res, "SCREEN RESOLUTION", opts_res, len(opts_res), toggle_res);
-	menu_page_add_toggle(page, save.post_effect, "POST PROCESSING", opts_post, len(opts_post), toggle_post);
+//	menu_page_add_toggle(page, save.screen_res, "SCREEN RESOLUTION", opts_res, len(opts_res), toggle_res);
+//	menu_page_add_toggle(page, save.post_effect, "POST PROCESSING", opts_post, len(opts_post), toggle_post);
 }
 
 // -----------------------------------------------------------------------------
@@ -326,7 +326,6 @@ static void toggle_music_volume(menu_t *menu, int data) {
 	save.music_volume = (float)data * 0.1;
 	save.is_dirty = true;
 	wav_volume(255 * save.music_volume);
-	printf("%d\n", sizeof(save_t));
 }
 
 static void toggle_sfx_volume(menu_t *menu, int data) {
