@@ -24,7 +24,7 @@ void wav_destroy(void);
 
 wav_stream_hnd_t wav_create(const char *filename, int loop);
 
-void wav_play(void (*etcb)(void));
+void wav_play(void);
 void wav_pause(void);
 void wav_stop(void);
 void wav_volume(int vol);

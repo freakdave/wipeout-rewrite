@@ -23,7 +23,6 @@
 #define SNDDEC_STATUS_PAUSING 0x03
 #define SNDDEC_STATUS_STOPPING 0x04
 #define SNDDEC_STATUS_RESUMING 0x05
-#define SNDDEC_STATUS_READY2 0x06
 
 typedef void *(*snddrv_cb)(snd_stream_hnd_t, int, int *);
 
@@ -65,8 +64,6 @@ typedef struct
 	/* Used only in reading wav data from a buffer
 	   and not a file */
 	uint32_t buf_offset;
-
-	void (*end_track_callback)(void);
 } snddrv_hnd;
 
 static snddrv_hnd stream;
@@ -206,7 +203,6 @@ wav_stream_hnd_t wav_create(const char *filename, int loop)
 	stream.sample_size = info.sample_size;
 	stream.data_length = info.data_length;
 	stream.data_offset = info.data_offset;
-	stream.end_track_callback = NULL;
 
 	fs_seek(stream.wave_file, stream.data_offset, SEEK_SET);
 
@@ -217,13 +213,11 @@ wav_stream_hnd_t wav_create(const char *filename, int loop)
 	return index;
 }
 
-void wav_play(void (*etcb)(void))
+void wav_play(void)
 {
 	if (stream.status == SNDDEC_STATUS_STREAMING)
 		return;
 
-	if (!stream.loop)
-		stream.end_track_callback = etcb;
 	stream.status = SNDDEC_STATUS_RESUMING;
 }
 
@@ -237,7 +231,7 @@ void wav_play_volume(void)
 
 void wav_pause(void)
 {
-	if (stream.status == SNDDEC_STATUS_READY || stream.status == SNDDEC_STATUS_READY2 || stream.status == SNDDEC_STATUS_PAUSING)
+	if (stream.status == SNDDEC_STATUS_READY || stream.status == SNDDEC_STATUS_PAUSING)
 		return;
 
 	stream.status = SNDDEC_STATUS_PAUSING;
@@ -245,7 +239,7 @@ void wav_pause(void)
 
 void wav_stop(void)
 {
-	if (stream.status == SNDDEC_STATUS_READY || stream.status == SNDDEC_STATUS_READY2 || stream.status == SNDDEC_STATUS_STOPPING)
+	if (stream.status == SNDDEC_STATUS_READY || stream.status == SNDDEC_STATUS_STOPPING)
 		return;
 
 	stream.status = SNDDEC_STATUS_STOPPING;
@@ -305,10 +299,6 @@ static void *sndwav_thread(void *param)
 		case SNDDEC_STATUS_STREAMING:
 			snd_stream_poll(stream.shnd);
 			break;
-		case SNDDEC_STATUS_READY2:
-			if (stream.end_track_callback)
-				stream.end_track_callback();
-			break;
 		case SNDDEC_STATUS_READY:
 		default:
 			break;
@@ -332,9 +322,9 @@ static void *wav_file_callback(snd_stream_hnd_t hnd, int req, int *done)
 	ssize_t read = fs_read(stream.wave_file, stream.drv_buf, req);
 
 	if (read == -1) {
-//#if RANGECHECK
+#if RANGECHECK
 		dbgio_printf("Failed to read from stream wave_file\nDisabling stream\n");
-//#endif
+#endif
 		snd_stream_stop(stream.shnd);
 		stream.status = SNDDEC_STATUS_READY;
 		return NULL;
@@ -347,16 +337,16 @@ static void *wav_file_callback(snd_stream_hnd_t hnd, int req, int *done)
 			ssize_t read2 = fs_read(stream.wave_file, stream.drv_buf, req);
 
 			if (read2 == -1) {
-//#if RANGECHECK
+#if RANGECHECK
 				dbgio_printf("read != req: Failed to read from stream wave_file\nDisabling stream\n");
-//#endif
+#endif
 				snd_stream_stop(stream.shnd);
 				stream.status = SNDDEC_STATUS_READY;
 				return NULL;
 			}
 		} else {
 			snd_stream_stop(stream.shnd);
-			stream.status = SNDDEC_STATUS_READY2;
+			stream.status = SNDDEC_STATUS_READY;
 			return NULL;
 		}
 	}
