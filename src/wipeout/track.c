@@ -317,7 +317,7 @@ void track_load_sections(char *file_name) {
 }
 
 #include <kos.h>
-extern pvr_vertex_t __attribute__((aligned(32))) vs[4];
+extern pvr_vertex_t __attribute__((aligned(32))) vs[5];
 
 /*
 
@@ -357,16 +357,33 @@ void track_draw_section(section_t *section) {
 	
 	for (uint32_t j = 0; j < face_count; j++) {
 		uint16_t tex_index = texture_from_list(g.track.textures, face->texture);
-
+#if 0
 		// I don't *like* copying but this is about as good as it gets
 		memcpy(&vs[0], &face->tris[0].vertices[0], 96);
+
 		render_tri(tex_index);
 		//render_face_tri(&face->tris[0].vertices[0], tex_index);
 
 		memcpy(&vs[0], &face->tris[1].vertices[0], 96);
 		render_tri(tex_index);
 		//render_face_tri(&face->tris[1].vertices[0], tex_index);
-
+#endif
+#if 1
+		memcpy(&vs[0], &face->tris[1].vertices[0], 32);
+		memcpy(&vs[1], &face->tris[0].vertices[2], 32);
+		memcpy(&vs[2], &face->tris[0].vertices[0], 32);		
+		memcpy(&vs[3], &face->tris[0].vertices[1], 32);
+		vs[0].flags = PVR_CMD_VERTEX;
+		//vs[0].argb = 0xffff0000;
+		vs[1].flags = PVR_CMD_VERTEX;
+		//vs[1].argb = 0xff00ff00;
+		vs[2].flags = PVR_CMD_VERTEX;
+		//vs[2].argb = 0xff0000ff;
+		vs[3].flags = PVR_CMD_VERTEX_EOL;
+		//vs[3].argb = 0xffffffff;
+		render_quad(//RENDER_NO_TEXTURE);//
+		tex_index);
+#endif		
 		face++;
 	}
 }

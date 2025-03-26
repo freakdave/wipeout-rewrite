@@ -190,8 +190,11 @@ const game_def_t def = {
 	},
 	.credits = {
 		"#DREAMCAST VERSION",
+		"#PROGRAMMERS",
 			"JNMARTIN84",
 			"MRNEO240",
+		"#VMU ASSETS",			
+			"STIFFPEAKS"
 			"",
 			"",
 		"#MANAGING DIRECTORS",
@@ -405,7 +408,7 @@ save_t save = {
 	.ui_scale = 0,
 	.show_fps = false,
 	.fullscreen = true,
-	.screen_res = 0,
+	.screen_res = RENDER_RES_NATIVE,
 	.post_effect = 0,
 
 	.has_rapier_class = true,  // for testing; should be false in prod
@@ -491,7 +494,7 @@ save_t save = {
 game_t g = {0};
 
 
-
+extern int in_menu;
 struct {
 	void (*init)(void);
 	void (*update)(void);

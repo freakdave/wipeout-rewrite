@@ -75,11 +75,8 @@ static mutex_t stream_mutex;
 static void *sndwav_thread(void *param);
 static void *wav_file_callback(snd_stream_hnd_t hnd, int req, int *done);
 
-int wav_init(void)
+int __attribute__((noinline)) wav_init(void)
 {
-	if (snd_stream_init() < 0)
-		return 0;
-
 #if RANGECHECK
 	mutex_init(&stream_mutex, MUTEX_TYPE_ERRORCHECK);
 #else
@@ -103,7 +100,7 @@ int wav_init(void)
 	return sndwav_status;
 }
 
-void wav_shutdown(void)
+void __attribute__((noinline)) wav_shutdown(void)
 {
 	sndwav_status = SNDDRV_STATUS_DONE;
 
@@ -117,7 +114,7 @@ void wav_shutdown(void)
 	}
 }
 
-void wav_destroy(void)
+void __attribute__((noinline)) wav_destroy(void)
 {
 	if (stream.shnd == SND_STREAM_INVALID)
 		return;
@@ -159,7 +156,7 @@ static int wav_get_info_adpcm(file_t file, WavFileInfo *result) {
     return 1;
 }
 extern save_t save;
-wav_stream_hnd_t wav_create(const char *filename, int loop)
+wav_stream_hnd_t __attribute__((noinline)) wav_create(const char *filename, int loop)
 {
 	file_t file;
 	WavFileInfo info;
@@ -213,7 +210,7 @@ wav_stream_hnd_t wav_create(const char *filename, int loop)
 	return index;
 }
 
-void wav_play(void)
+void __attribute__((noinline)) wav_play(void)
 {
 	if (stream.status == SNDDEC_STATUS_STREAMING)
 		return;
@@ -221,7 +218,7 @@ void wav_play(void)
 	stream.status = SNDDEC_STATUS_RESUMING;
 }
 
-void wav_play_volume(void)
+void __attribute__((noinline)) wav_play_volume(void)
 {
 	if (stream.status == SNDDEC_STATUS_STREAMING)
 		return;
@@ -229,7 +226,7 @@ void wav_play_volume(void)
 	stream.status = SNDDEC_STATUS_RESUMING;
 }
 
-void wav_pause(void)
+void __attribute__((noinline)) wav_pause(void)
 {
 	if (stream.status == SNDDEC_STATUS_READY || stream.status == SNDDEC_STATUS_PAUSING)
 		return;
@@ -237,7 +234,7 @@ void wav_pause(void)
 	stream.status = SNDDEC_STATUS_PAUSING;
 }
 
-void wav_stop(void)
+void __attribute__((noinline)) wav_stop(void)
 {
 	if (stream.status == SNDDEC_STATUS_READY || stream.status == SNDDEC_STATUS_STOPPING)
 		return;
@@ -245,7 +242,7 @@ void wav_stop(void)
 	stream.status = SNDDEC_STATUS_STOPPING;
 }
 
-void wav_volume(int vol)
+void __attribute__((noinline)) wav_volume(int vol)
 {
 	if (stream.shnd == SND_STREAM_INVALID)
 		return;
@@ -260,7 +257,7 @@ void wav_volume(int vol)
 	snd_stream_volume(stream.shnd, stream.vol);
 }
 
-int wav_is_playing(void)
+int __attribute__((noinline)) wav_is_playing(void)
 {
 	return stream.status == SNDDEC_STATUS_STREAMING;
 }

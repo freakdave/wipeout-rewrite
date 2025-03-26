@@ -23,6 +23,8 @@
 
 #define ATTRACT_DURATION 60.0
 
+int in_race = 0;
+
 static bool is_paused = false;
 static bool menu_is_scroll_text = false;
 static bool has_show_credits = false;
@@ -89,10 +91,12 @@ void race_update(void) {
 
 		if (g.is_attract_mode) {
 			if (input_pressed(A_MENU_START) || input_pressed(A_MENU_SELECT)) {
+				in_race = 0;
 				game_set_scene(GAME_SCENE_MAIN_MENU);
 			}
 			float duration = system_time() - attract_start_time;
 			if ((!active_menu && duration > 30) || duration > 120) {
+				in_race = 0;
 				game_set_scene(GAME_SCENE_TITLE);
 			}
 		}
@@ -135,6 +139,8 @@ void race_update(void) {
 }
 
 void race_start(void) {
+	in_race = 1;
+
 	active_menu = NULL;
 	sfx_reset();
 	scene_init();

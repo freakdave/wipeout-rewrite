@@ -20,14 +20,15 @@ typedef enum {
 	NUM_RENDER_POST_EFFCTS,
 } render_post_effect_t;
 
+// dont do it, you'll see lol
+#define RENDER_USE_FSAA 0
+
 #define RENDER_USE_MIPMAPS 1
 
-#define RENDER_FADEOUT_NEAR 48000.0f 
-//72000.0f
-//48000.0
-#define RENDER_FADEOUT_FAR 64000.0f
-//96000.0f
-//64000.0
+#define RENDER_FADEOUT_NEAR 56000.0f
+//48000.0f 
+#define RENDER_FADEOUT_FAR 72000.0f
+//64000.0f
 
 extern uint16_t RENDER_NO_TEXTURE;
 

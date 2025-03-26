@@ -422,7 +422,7 @@ void ship_draw(ship_t *self) {
 	object_draw(self->model, &self->mat);
 }
 #include <kos.h>
-extern pvr_vertex_t __attribute__((aligned(32))) vs[4];
+extern pvr_vertex_t __attribute__((aligned(32))) vs[5];
 
 void ship_draw_shadow(ship_t *self) {	
 	track_face_t *face = track_section_get_base_face(self->section);
@@ -432,9 +432,9 @@ void ship_draw_shadow(ship_t *self) {
 	vec3_t wngl = vec3_sub(vec3_sub(self->position, vec3_mulf(self->dir_right, 256)), vec3_mulf(self->dir_forward, 384));
 	vec3_t wngr = vec3_sub(vec3_add(self->position, vec3_mulf(self->dir_right, 256)), vec3_mulf(self->dir_forward, 384));
 
-	nose = vec3_sub(nose, vec3_mulf(face->normal, 0.97 * vec3_distance_to_plane(nose, face_point, face->normal)));
-	wngl = vec3_sub(wngl, vec3_mulf(face->normal, 0.97 * vec3_distance_to_plane(wngl, face_point, face->normal)));
-	wngr = vec3_sub(wngr, vec3_mulf(face->normal, 0.97 * vec3_distance_to_plane(wngr, face_point, face->normal)));
+	nose = vec3_sub(nose, vec3_mulf(face->normal, 0.90 * vec3_distance_to_plane(nose, face_point, face->normal)));
+	wngl = vec3_sub(wngl, vec3_mulf(face->normal, 0.90 * vec3_distance_to_plane(wngl, face_point, face->normal)));
+	wngr = vec3_sub(wngr, vec3_mulf(face->normal, 0.90 * vec3_distance_to_plane(wngr, face_point, face->normal)));
 	
 	uint32_t lcol = 0x80000000;
 

@@ -22,6 +22,8 @@ static void page_options_video_init(menu_t *menu);
 static void page_options_audio_init(menu_t *menu);
 static void page_options_highscores_init(menu_t *menu);
 
+int in_menu = 0;
+
 static uint16_t background;
 static texture_list_t track_images;
 static menu_t *main_menu;
@@ -36,7 +38,13 @@ static struct {
 	Object *controller;
 } models;
 
+extern int test_en;
+extern int dep_en;
 static void draw_model(Object *model, vec2_t offset, vec3_t pos, float rotation) {
+//	int old_test = test_en;
+//	int old_write = dep_en;
+//	render_set_depth_test(false);
+//	render_set_depth_write(false);
 	render_set_view(vec3(0,0,0), vec3(0, -F_PI, -F_PI));
 	render_set_screen_position(offset);
 	mat4_t mat = mat4_identity();
@@ -44,6 +52,8 @@ static void draw_model(Object *model, vec2_t offset, vec3_t pos, float rotation)
 	mat4_set_yaw_pitch_roll(&mat, vec3(0, rotation, F_PI));
 	object_draw(model, &mat);
 	render_set_screen_position(vec2(0, 0));
+//	render_set_depth_test(old_test);
+//	render_set_depth_write(old_write);
 }
 
 // -----------------------------------------------------------------------------
@@ -563,6 +573,7 @@ static void button_pilot_select(menu_t *menu, int data) {
 		page_circut_init(menu);
 	}
 	else {
+		in_menu = 0;
 		g.circut = 0;
 		game_reset_championship();
 		game_set_scene(GAME_SCENE_RACE);
@@ -590,6 +601,7 @@ static void page_pilot_init(menu_t *menu) {
 // Circut
 
 static void button_circut_select(menu_t *menu, int data) {
+	in_menu = 0;
 	g.circut = data;
 	game_set_scene(GAME_SCENE_RACE);
 }
@@ -628,15 +640,20 @@ static void objects_unpack_imp(Object **dest_array, int len, Object *src) {
 	error_if(i != len, "expected %d models got %d", len, i)
 }
 
+extern int load_OP;
 extern int LOAD_UNFILTERED;
+
 void main_menu_init(void) {
+	in_menu = 1;
 	g.is_attract_mode = false;
 
 	ships_reset_exhaust_plumes();
 
 	main_menu = mem_bump(sizeof(menu_t));
 
+	load_OP = 1;
 	background = image_get_texture("wipeout/textures/wipeout1.tim");
+	load_OP = 0;
 	track_images = image_get_compressed_textures("wipeout/textures/track.cmp");
 
 LOAD_UNFILTERED = 1;
@@ -655,10 +672,15 @@ LOAD_UNFILTERED = 0;
 	menu_reset(main_menu);
 	page_main_init(main_menu);
 }
-
+extern pvr_dr_state_t dr_state;
 void main_menu_update(void) {
 	render_set_view_2d();
 	render_push_2d(vec2i(0, 0), render_size(), rgba(128, 128, 128, 255), background);
+//	render_background_quad(background);
+	pvr_list_finish();
+	pvr_list_begin(PVR_LIST_TR_POLY);
+	pvr_dr_init(&dr_state);
+
 	menu_update(main_menu);
 }
 

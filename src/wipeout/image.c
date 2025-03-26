@@ -36,6 +36,19 @@ static inline uint16_t tim_16bit_to_argb1555(uint16_t c, bool transparent_bit) {
 	);
 }
 
+static inline uint16_t get_rgb565(uint8_t r, uint8_t g, uint8_t b) {
+	return (uint16_t) ((((r >> 3)&0x1f)<<11) | (((g >> 2)&0x3f)<<5) | ((b >> 3)&0x1f));
+
+}
+
+static inline uint16_t tim_16bit_to_rgb565(uint16_t c) {
+	return get_rgb565(
+		((c >>  0) & 0x1f) << 3,
+		((c >>  5) & 0x1f) << 3,
+		((c >> 10) & 0x1f) << 3
+	);
+}
+
 image_t *image_alloc(uint32_t width, uint32_t height) {
 	image_t *image = mem_temp_alloc(sizeof(image_t) + width * height * sizeof(uint16_t));
 	image->width = width;
@@ -258,10 +271,13 @@ cmp_t *image_load_compressed(char *name) {
 	return cmp;
 }
 
+int do_transp = 0;
+
 uint16_t image_get_texture(char *name) {
 	uint32_t size;
 	uint8_t *bytes = platform_load_asset(name, &size);
 	image_t *image = image_load_from_bytes(bytes, false);
+	do_transp = 0;
 	uint32_t texture_index = render_texture_create(image->width, image->height, image->pixels);
 	mem_temp_free(image);
 	mem_temp_free(bytes);
@@ -273,7 +289,9 @@ uint16_t image_get_texture_semi_trans(char *name) {
 	uint32_t size;
 	uint8_t *bytes = platform_load_asset(name, &size);
 	image_t *image = image_load_from_bytes(bytes, true);
+	do_transp = 1;
 	uint32_t texture_index = render_texture_create(image->width, image->height, image->pixels);
+	do_transp = 0;
 	mem_temp_free(image);
 	mem_temp_free(bytes);
 
@@ -287,6 +305,7 @@ texture_list_t image_get_compressed_textures(char *name) {
 	for (int i = 0; i < cmp->len; i++) {
 		int32_t width, height;
 		image_t *image = image_load_from_bytes(cmp->entries[i], false);
+		do_transp = 0;
 		render_texture_create(image->width, image->height, image->pixels);
 		mem_temp_free(image);
 	}

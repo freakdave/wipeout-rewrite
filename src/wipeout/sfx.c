@@ -58,8 +58,13 @@ void sfx_load(void) {
 
 	mutex_init(&song_mtx, MUTEX_TYPE_NORMAL);
 	cond_init(&song_cv);
-
-	thd_create(1, song_worker, NULL);
+	kthread_attr_t song_attr;
+	song_attr.create_detached = 1;
+	song_attr.stack_size = 16384;
+	song_attr.stack_ptr = NULL;
+	song_attr.prio = 10;
+	song_attr.label = "SONG_WORKER";	
+	thd_create_ex(&song_attr, song_worker, NULL);
 
 	// 16 byte blocks: 2 byte header, 14 bytes with 2x4bit samples each
 	uint32_t vb_size;
@@ -106,6 +111,7 @@ void sfx_load(void) {
 		if (flags_is(flags, VAG_REGION_START)) {
 			error_if(sources[num_sources].samples == NULL, "VAG_REGION_START without VAG_REGION_END");
 			sources[num_sources].len = &sample_buffer[sample_index] - sources[num_sources].samples;
+			dbgio_printf("loading %08x %d\n", (char *)sources[num_sources].samples, sources[num_sources].len);
 			handles[num_sources] = snd_sfx_load_raw_buf( (char *)sources[num_sources].samples, sources[num_sources].len, 22050, 8, 1);
 			num_sources++;
 		}
@@ -354,8 +360,6 @@ static uint32_t runtimes[11] = {
 
 
 #include <errno.h>
-
-extern int wav_init(void);
 
 void *song_worker(void *arg) {
 	int song_interrupted = 0;

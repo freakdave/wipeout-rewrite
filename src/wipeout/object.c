@@ -15,14 +15,9 @@
 #include "hud.h"
 #include "object.h"
 
-static uint32_t __attribute__((aligned(32))) p;
 
 Object *objects_load(char *name, texture_list_t tl) {
-
-	mat4_t ident = mat4_identity();
-
-	p = 0;
-
+	uint32_t __attribute__((aligned(32))) p = 0;
 	uint32_t length = 0;
 	uint8_t *bytes = platform_load_asset(name, &length);
 	if (!bytes) {
@@ -455,13 +450,26 @@ Object *objects_load(char *name, texture_list_t tl) {
 	return objectList;
 }
 #include <kos.h>
-extern pvr_vertex_t __attribute__((aligned(32))) vs[4];
-
+extern pvr_vertex_t __attribute__((aligned(32))) vs[5];
+#if 0
+//SPR *sprlist[64];
+int coordlist[64];
+int16_t typelist[64];
+int wl[64];
+int hl[64];
+rgba_t cl[64];
+int tl[64];
+#endif
+//extern int test_en;
+//extern int dep_en;
 void object_draw(Object *object, mat4_t *mat) {
 	vec3_t *vertex = object->vertices;
 
 	Prm poly = {.primitive = object->primitives};
+	//Prm poly2 = {.primitive = object->primitives};
 	int primitives_len = object->primitives_len;
+
+//	int sprindex = 0;
 
 	render_set_model_mat(mat);
 
@@ -535,7 +543,7 @@ void object_draw(Object *object, mat4_t *mat) {
 			vs[1].argb = color_to_pvr(poly.gt4->color[1]);
 			vs[1].oargb = 1;
 
-			vs[2].flags = PVR_CMD_VERTEX_EOL;
+			vs[2].flags = PVR_CMD_VERTEX;
 			vs[2].x = (float)vertex[coord2].x;
 			vs[2].y = (float)vertex[coord2].y;
 			vs[2].z = (float)vertex[coord2].z;
@@ -543,7 +551,19 @@ void object_draw(Object *object, mat4_t *mat) {
 			vs[2].v = (float)poly.gt4->v2;
 			vs[2].argb = color_to_pvr(poly.gt4->color[2]);
 			vs[2].oargb = 1;
-			
+
+			vs[3].flags = PVR_CMD_VERTEX_EOL;
+			vs[3].x = (float)vertex[coord3].x;
+			vs[3].y = (float)vertex[coord3].y;
+			vs[3].z = (float)vertex[coord3].z;
+			vs[3].u = (float)poly.gt4->u3;
+			vs[3].v = (float)poly.gt4->v3;
+			vs[3].argb = color_to_pvr(poly.gt4->color[3]);
+			vs[3].oargb = 1;
+
+			render_quad(poly.gt4->texture);
+
+#if 0			
 			render_tri(poly.gt4->texture);
 
 //			vs[0].flags = PVR_CMD_VERTEX;
@@ -574,7 +594,7 @@ void object_draw(Object *object, mat4_t *mat) {
 //			vs[2].oargb = 1;
 
 			render_tri(poly.gt4->texture);
-
+#endif
 			poly.gt4 += 1;
 			break;
 
@@ -625,7 +645,7 @@ void object_draw(Object *object, mat4_t *mat) {
 			coord2 = poly.ft4->coords[2];
 			coord3 = poly.ft4->coords[3];
 
-//			vs[0].flags = PVR_CMD_VERTEX;
+			vs[0].flags = PVR_CMD_VERTEX;
 			vs[0].x = (float)vertex[coord0].x;
 			vs[0].y = (float)vertex[coord0].y;
 			vs[0].z = (float)vertex[coord0].z;
@@ -634,7 +654,7 @@ void object_draw(Object *object, mat4_t *mat) {
 			vs[0].argb = argb;
 			vs[0].oargb = 0;
 
-//			vs[1].flags = PVR_CMD_VERTEX;
+			vs[1].flags = PVR_CMD_VERTEX;
 			vs[1].x = (float)vertex[coord1].x;
 			vs[1].y = (float)vertex[coord1].y;
 			vs[1].z = (float)vertex[coord1].z;
@@ -643,7 +663,7 @@ void object_draw(Object *object, mat4_t *mat) {
 			vs[1].argb = argb;
 			vs[1].oargb = 0;
 
-			vs[2].flags = PVR_CMD_VERTEX_EOL;
+			vs[2].flags = PVR_CMD_VERTEX;//_EOL;
 			vs[2].x = (float)vertex[coord2].x;
 			vs[2].y = (float)vertex[coord2].y;
 			vs[2].z = (float)vertex[coord2].z;
@@ -651,7 +671,19 @@ void object_draw(Object *object, mat4_t *mat) {
 			vs[2].v = (float)poly.ft4->v2;
 			vs[2].argb = argb;
 			vs[2].oargb = 0;
-			
+
+			vs[3].flags = PVR_CMD_VERTEX_EOL;
+			vs[3].x = (float)vertex[coord3].x;
+			vs[3].y = (float)vertex[coord3].y;
+			vs[3].z = (float)vertex[coord3].z;
+			vs[3].u = (float)poly.ft4->u3;
+			vs[3].v = (float)poly.ft4->v3;
+			vs[2].argb = argb;
+			vs[2].oargb = 0;
+//			vs[1].argb = argb;
+//			vs[1].oargb = 0;
+			render_quad(poly.ft4->texture);
+#if 0
 			render_tri(poly.ft4->texture);
 
 //			vs[0].flags = PVR_CMD_VERTEX;
@@ -682,7 +714,7 @@ void object_draw(Object *object, mat4_t *mat) {
 //			vs[2].oargb = 0;
 
 			render_tri(poly.ft4->texture);
-
+#endif
 			poly.ft4 += 1;
 			break;
 
@@ -737,13 +769,23 @@ void object_draw(Object *object, mat4_t *mat) {
 			vs[1].argb = color_to_pvr(poly.g4->color[1]);
 			vs[1].oargb = 1;
 
-			vs[2].flags = PVR_CMD_VERTEX_EOL;
+			vs[2].flags = PVR_CMD_VERTEX;
 			vs[2].x = (float)vertex[coord2].x;
 			vs[2].y = (float)vertex[coord2].y;
 			vs[2].z = (float)vertex[coord2].z;
 			vs[2].argb = color_to_pvr(poly.g4->color[2]);
 			vs[2].oargb = 1;
-			
+
+			vs[3].flags = PVR_CMD_VERTEX_EOL;
+			vs[3].x = (float)vertex[coord3].x;
+			vs[3].y = (float)vertex[coord3].y;
+			vs[3].z = (float)vertex[coord3].z;
+			vs[3].argb = color_to_pvr(poly.g4->color[3]);
+			vs[3].oargb = 1;
+
+			render_quad(RENDER_NO_TEXTURE);
+
+#if 0			
 			render_tri(RENDER_NO_TEXTURE);
 
 //			vs[0].flags = PVR_CMD_VERTEX;
@@ -768,7 +810,7 @@ void object_draw(Object *object, mat4_t *mat) {
 //			vs[2].oargb = 1;
 
 			render_tri(RENDER_NO_TEXTURE);
-
+#endif
 			poly.g4 += 1;
 			break;
 
@@ -827,13 +869,22 @@ void object_draw(Object *object, mat4_t *mat) {
 			vs[1].argb = argb;
 			vs[1].oargb = 0;
 
-			vs[2].flags = PVR_CMD_VERTEX_EOL;
+			vs[2].flags = PVR_CMD_VERTEX;//_EOL;
 			vs[2].x = (float)vertex[coord2].x;
 			vs[2].y = (float)vertex[coord2].y;
 			vs[2].z = (float)vertex[coord2].z;
 			vs[2].argb = argb;
 			vs[2].oargb = 0;
 
+			vs[3].flags = PVR_CMD_VERTEX_EOL;
+			vs[3].x = (float)vertex[coord3].x;
+			vs[3].y = (float)vertex[coord3].y;
+			vs[3].z = (float)vertex[coord3].z;
+			vs[3].argb = argb;
+			vs[3].oargb = 0;
+
+			render_quad(RENDER_NO_TEXTURE);
+#if 0
 			render_tri(RENDER_NO_TEXTURE);
 
 //			vs[0].flags = PVR_CMD_VERTEX;
@@ -858,13 +909,16 @@ void object_draw(Object *object, mat4_t *mat) {
 //			vs[2].oargb = 0;
 
 			render_tri(RENDER_NO_TEXTURE);
-
+#endif
 			poly.f4 += 1;
 			break;
 
 		case PRM_TYPE_TSPR:
 		case PRM_TYPE_BSPR:
+#if 1
 			coord0 = poly.spr->coord;
+#endif
+#if 1
 			render_push_sprite(
 				vec3(
 					vertex[coord0].x,
@@ -875,6 +929,19 @@ void object_draw(Object *object, mat4_t *mat) {
 				poly.spr->color,
 				poly.spr->texture
 			);
+#endif
+#if 0
+			if (sprindex <= 63) {
+//				sprlist[sprindex] = poly.spr;
+				coordlist[sprindex] = coord0;
+				typelist[sprindex] = poly.primitive->type;
+				wl[sprindex] = poly.spr->width;
+				hl[sprindex] = poly.spr->height;
+				cl[sprindex] = poly.spr->color;
+				tl[sprindex] = poly.spr->texture;
+				sprindex++;
+			}
+#endif
 			poly.spr += 1;
 			break;
 
@@ -883,4 +950,99 @@ void object_draw(Object *object, mat4_t *mat) {
 
 		}
 	}
+
+#if 0
+//int old_test = test_en;
+	//int old_dep = dep_en;
+
+
+
+
+	for (int i=sprindex-1;i>=0;i--) {
+			if (wl[i] < hl[i]) {
+//					render_set_depth_write(false);
+			//		render_set_depth_test(false);
+			}
+			int coord0 = coordlist[i];
+			render_push_sprite(
+				vec3(
+					vertex[coord0].x,
+					vertex[coord0].y + ((typelist[i] == PRM_TYPE_TSPR ? hl[i] : -hl[i]) >> 1),
+					vertex[coord0].z
+				),
+				vec2i(wl[i], hl[i]),
+				cl[i],
+				tl[i]
+
+			);		
+			if (wl[i] < hl[i]) {
+			//	render_set_depth_test(old_test);//write(old_dep);
+			}
+	}
+
+//	render_set_depth_test(old_test);
+#endif
+
+#if 0
+	for (int i = 0; i < primitives_len; i++) {
+		int coord0;
+		int coord1;
+		int coord2;
+		int coord3;
+		uint32_t argb;
+		switch (poly2.primitive->type) {
+		case PRM_TYPE_GT3:
+			poly2.gt3 += 1;
+			break;
+
+		case PRM_TYPE_GT4:
+			poly2.gt4 += 1;
+			break;
+
+		case PRM_TYPE_FT3:
+			poly2.ft3 += 1;
+			break;
+
+		case PRM_TYPE_FT4:
+			poly2.ft4 += 1;
+			break;
+
+		case PRM_TYPE_G3:
+			poly2.g3 += 1;
+			break;
+
+		case PRM_TYPE_G4:
+			poly2.g4 += 1;
+			break;
+
+		case PRM_TYPE_F3:
+			poly2.f3 += 1;
+			break;
+
+		case PRM_TYPE_F4:
+			poly2.f4 += 1;
+			break;
+
+		case PRM_TYPE_TSPR:
+		case PRM_TYPE_BSPR:
+			coord0 = poly2.spr->coord;
+			render_push_sprite(
+				vec3(
+					vertex[coord0].x,
+					vertex[coord0].y + ((poly2.primitive->type == PRM_TYPE_TSPR ? poly2.spr->height : -poly2.spr->height) >> 1),
+					vertex[coord0].z
+				),
+				vec2i(poly2.spr->width, poly2.spr->height),
+				poly2.spr->color,
+				poly2.spr->texture
+			);
+			poly2.spr += 1;
+			break;
+
+		default:
+			break;
+
+		}
+	}
+#endif
 }

@@ -51,6 +51,8 @@ void scene_update_aurora_borealis(void);
 
 int load_OP = 0;
 
+pvr_poly_hdr_t sky_hdr;
+
 void scene_load(const char *base_path, float sky_y_offset) {
 	texture_list_t scene_textures = image_get_compressed_textures(get_path(base_path, "scene.cmp"));
 	scene_objects = objects_load(get_path(base_path, "scene.prm"), scene_textures);
@@ -120,12 +122,19 @@ void scene_update(void) {
 	}
 }
 
+int sky_done = 0;
+extern pvr_dr_state_t dr_state;
+
 void scene_draw(camera_t *camera) {
 	// Sky
 	render_set_depth_write(false);
 	mat4_set_translation(&sky_object->mat, vec3_add(camera->position, sky_offset));
 	object_draw(sky_object, &sky_object->mat);
 	render_set_depth_write(true);
+
+	pvr_list_finish();
+ 	pvr_list_begin(PVR_LIST_TR_POLY);
+	pvr_dr_init(&dr_state);
 
 	// Objects
 

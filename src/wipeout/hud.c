@@ -62,7 +62,7 @@ void hud_load(void) {
 	LOAD_UNFILTERED = 0;
 }
 #include <kos.h>
-extern pvr_vertex_t __attribute__((aligned(32))) vs[4];
+extern pvr_vertex_t __attribute__((aligned(32))) vs[5];
 static void hud_draw_speedo_bar(vec2i_t *pos, const speedo_bar_t *a, const speedo_bar_t *b, float f, rgba_t color_override) {
 	rgba_t left_color, right_color;
 	if (color_override.a > 0) {

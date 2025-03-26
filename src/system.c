@@ -9,10 +9,10 @@
 #include "kos.h"
 
 KOS_INIT_FLAGS(INIT_DEFAULT);
-pvr_init_params_t pvr_params = { { 0, 0, PVR_BINSIZE_16, 0, 0 },
+pvr_init_params_t pvr_params = { { PVR_BINSIZE_16, 0, PVR_BINSIZE_16, 0, 0 },
                                 1048576,
                             	0, // 0 is dma disabled
-                                0, // fsaa
+                            	RENDER_USE_FSAA, // fsaa
                                 1, // 1 is autosort disabled
                                 2, // extra OPBs
                                 0, // Vertex buffer double-buffering enabled

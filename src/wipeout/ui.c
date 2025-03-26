@@ -185,6 +185,8 @@ void ui_draw_number(int num, vec2i_t pos, ui_text_size_t size, rgba_t color) {
 	ui_draw_text(text_buffer + i, pos, size, color);
 }
 
+int drawing_text = 0;
+
 void ui_draw_text(const char *text, vec2i_t pos, ui_text_size_t size, rgba_t color) {
 	char_set_t *cs = &char_set[size];
 
@@ -192,7 +194,9 @@ void ui_draw_text(const char *text, vec2i_t pos, ui_text_size_t size, rgba_t col
 		if (text[i] != ' ') {
 			glyph_t *glyph = &cs->glyphs[char_to_glyph_index(text[i])];
 			vec2i_t size = vec2i(glyph->width, cs->height);
+			drawing_text = 1;
 			render_push_2d_tile(pos, glyph->offset, size, ui_scaled(size), color, cs->texture);
+			drawing_text = 0;
 			pos.x += glyph->width * ui_scale;
 		}
 		else {
@@ -203,11 +207,15 @@ void ui_draw_text(const char *text, vec2i_t pos, ui_text_size_t size, rgba_t col
 
 void ui_draw_image(vec2i_t pos, uint16_t texture) {
 	vec2i_t scaled_size = ui_scaled(render_texture_size(texture));
+			drawing_text = 1;
 	render_push_2d(pos, scaled_size, rgba(224, 224, 224, 255), texture);
+			drawing_text = 0;
 }
 
 void ui_draw_icon(ui_icon_type_t icon, vec2i_t pos, rgba_t color) {
+			drawing_text = 1;
 	render_push_2d(pos, ui_scaled(render_texture_size(icon_textures[icon])), color, icon_textures[icon]);
+			drawing_text = 0;
 }
 
 void ui_draw_text_centered(const char *text, vec2i_t pos, ui_text_size_t size, rgba_t color) {

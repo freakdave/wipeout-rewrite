@@ -18,17 +18,17 @@ typedef struct {
 
 typedef int wav_stream_hnd_t;
 
-int wav_init(void);
-void wav_shutdown(void);
-void wav_destroy(void);
+int __attribute__((noinline)) wav_init(void);
+void __attribute__((noinline)) wav_shutdown(void);
+void __attribute__((noinline)) wav_destroy(void);
 
-wav_stream_hnd_t wav_create(const char *filename, int loop);
+wav_stream_hnd_t __attribute__((noinline)) wav_create(const char *filename, int loop);
 
-void wav_play(void);
-void wav_pause(void);
-void wav_stop(void);
-void wav_volume(int vol);
-int wav_is_playing(void);
+void __attribute__((noinline)) wav_play(void);
+void __attribute__((noinline)) wav_pause(void);
+void __attribute__((noinline)) wav_stop(void);
+void __attribute__((noinline)) wav_volume(int vol);
+int __attribute__((noinline)) wav_is_playing(void);
 
 __END_DECLS
 

@@ -30,7 +30,7 @@ void *platform_find_gamepad(void) {
 #include <dc/maple.h>
 #include <dc/maple/controller.h>
 
-#define configDeadzone (0x20)
+#define configDeadzone (0x02) // 0x20
 void platform_pump_events() {
     maple_device_t *cont;
     cont_state_t *state;
@@ -168,6 +168,11 @@ void platform_audio_callback(void* userdata, uint8_t* stream, int len) {
 void platform_set_audio_mix_cb(void (*cb)(float *buffer, uint32_t len)) {
 }
 
+char platfn[256];
+
+char *platform_get_fn(const char *name) {
+	return strcat(strcpy(platfn, path_assets), name);
+}
 
 FILE *platform_open_asset(const char *name, const char *mode) {
 	char *path = strcat(strcpy(temp_path, path_assets), name);
@@ -405,6 +410,8 @@ int main(int argc, char *argv[]) {
 		exit(-1);
 		}
 	}
+	if (snd_stream_init() < 0)
+		exit(-1);
 
 	draw_vmu_icon();
 
